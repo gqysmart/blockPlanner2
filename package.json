@@ -1,0 +1,24 @@
+{
+  "name": "blockplanner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gqysmart/blockplanner.git"
+  },
+  "keywords": [
+    "realstate",
+    "plan",
+    "design"
+  ],
+  "author": "gqysmart",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gqysmart/blockplanner/issues"
+  },
+  "homepage": "https://github.com/gqysmart/blockplanner#readme"
+}
