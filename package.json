@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/gqysmart/blockplanner/issues"
   },
-  "homepage": "https://github.com/gqysmart/blockplanner#readme"
+  "homepage": "https://github.com/gqysmart/blockplanner#readme",
+  "dependencies": {
+    "express": "^4.14.1"
+  }
 }
