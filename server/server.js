@@ -1,5 +1,5 @@
-var app = require("./server/express");
-var config = require("./config");
+var app = require("./config/express");
+var config = require("./config/config");
 
 
 var port = config.port;

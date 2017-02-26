@@ -1,0 +1,22 @@
+{
+  "name": "blockplanner",
+  "description": "",
+  "main": "app.js",
+  "authors": [
+    "gqysmart"
+  ],
+  "license": "ISC",
+  "keywords": [
+    "realstate",
+    "plan",
+    "design"
+  ],
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
