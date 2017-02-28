@@ -18,9 +18,11 @@ gulp.task("partials", function() {
             path.join(conf.paths.src, "/app/**/*.html"),
         ])
         .pipe($plugins.htmlmin({
+            caseSensitive: true,
+            collapseWhitespace: true,
 
         }))
-        .pipe($plugins.angularTemplatecache("templateCacheHtml.js", { module: "BlockPlanner", root: "app" }))
+        .pipe($plugins.angularTemplatecache("templateCacheHtml.js", { module: "BlurAdmin", root: "app" }))
         .pipe(gulp.dest(conf.paths.tmp + "/partials/"));
 
 });
@@ -33,36 +35,46 @@ gulp.task("html", ["inject", "partials"], function() {
         addRootSlash: false
     };
 
-    var htmlFilter = $plugins.filter("*.html", { restore: true, dot: true });
+    var htmlFilter = $plugins.filter("**/*.html", { restore: true, dot: true });
     var jsFilter = $plugins.filter("**/*.js", { restore: true, dot: true });
     var cssFilter = $plugins.filter("**/*.css", { restore: true, dot: true });
 
     return gulp.src([path.join(conf.paths.tmp, "/serve/*.html")])
         .pipe($plugins.inject(partialsInjectFile, partialsInjecOptions))
-        .pipe(useref())
+        .pipe(useref({
+            transformPath: function(filePath) {
+                return filePath
+            }
+        }))
 
-    // .pipe(jsFilter)
-    //     .pipe($plugins.sourcemaps.init())
-    //     .pipe($plugins.ngAnnotate())
-    //     .pipe($plugins.uglify())
-    //     .pipe($plugins.sourcemaps.write("maps"))
-    //     .pipe(jsFilter.restore)
+    .pipe(jsFilter)
+        // .pipe($plugins.sourcemaps.init())
+        // .pipe($plugins.ngAnnotate())
+        // .pipe($plugins.uglify())
+        // .pipe($plugins.sourcemaps.write("maps"))
+        .pipe(gulp.dest(path.join(conf.paths.dist, "..")))
+        .pipe(jsFilter.restore)
 
-    // .pipe(cssFilter)
-    //     .pipe($plugins.sourcemaps.init())
-    //     .pipe($plugins.minifyCss({ processImport: false }))
-    //     .pipe($plugins.sourcemaps.write("maps"))
-    //     .pipe(cssFilter.restore)
-    //     //     .pipe($plugins.rev())
+    .pipe(cssFilter)
+        // .pipe($plugins.sourcemaps.init())
+        // .pipe($plugins.minifyCss({ processImport: false }))
+        // .pipe($plugins.sourcemaps.write("maps"))
+        .pipe(gulp.dest(path.join(conf.paths.dist, "..")))
+        .pipe(cssFilter.restore)
+        //     //     //     .pipe($plugins.rev())
 
 
-    // // .pipe($plugins.useref())
-    // //     .pipe($plugins.revReplace())
-    // .pipe(htmlFilter)
-    //     .pipe($plugins.htmlmin())
-    //     .pipe(htmlFilter.restore)
-    .pipe(gulp.dest(conf.paths.dist));
-    // .pipe($plugins.size({ title: path.join(conf.paths.dist, "/"), showFiles: true }))
+
+    .pipe(htmlFilter)
+        // .pipe($plugins.htmlmin({
+        //     collapseWhitespace: true,
+        //     conservativeCollapse: true,
+        //     collapseInlineTagWhitespace: true
+        // }))
+        .pipe(gulp.dest(path.join(conf.paths.dist, ".")))
+        // .pipe(htmlFilter.restore)
+        // .pipe(gulp.dest(path.join(conf.paths.dist, "..")));
+        // .pipe($plugins.size({ title: path.join(conf.paths.dist, "/"), showFiles: true }))
 
 
 

@@ -1,14 +1,14 @@
 'use strict';
 
 var gutil = require("gulp-util");
-var appName = "blockPlanner";
+var appName = "bp";
 
 
 module.exports = {
     appName: appName,
 
     paths: {
-        src: appName + "-src",
+        src: "src",
         // src: "src-test",
         dist: "server/apps/" + appName,
         tmp: ".tmp"
