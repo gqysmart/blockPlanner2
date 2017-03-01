@@ -1,7 +1,7 @@
 'use strict';
 
 var gutil = require("gulp-util");
-var appName = "bp";
+var appName = "app";
 
 
 module.exports = {
@@ -10,7 +10,8 @@ module.exports = {
     paths: {
         src: "src",
         // src: "src-test",
-        dist: "server/apps/" + appName,
+        dist: "server",
+        devDist: "server",
         tmp: ".tmp"
 
     },

@@ -25,6 +25,8 @@
     "ejs": "^2.5.6",
     "express": "^4.14.1",
     "fs-extra": "^2.0.0",
+    "gulp-gh-pages": "^0.5.4",
+    "gulp-shell": "^0.6.1",
     "serve-favicon": "^2.4.0",
     "serve-static": "^1.11.2"
   },

@@ -6,6 +6,7 @@ var conf = require("./config");
 
 var $plugins = require("gulp-load-plugins")();
 
+
 gulp.task("scripts", function() {
     return gulp.src(path.join(conf.paths.src, "/app/**/*.js"))
         .pipe($plugins.eslint())

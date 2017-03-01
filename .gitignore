@@ -2,5 +2,4 @@
 /typings
 /bower_components
 /.tmp
-
-/server/apps
+/server/app
