@@ -13,11 +13,11 @@ module.exports = (function() {
     var app = express();
     //add middleware here!
     //static resourse
-    app.use(serveFavicon("server/public/favicon.ico"));
-    app.use(serveStatic("server/public", {}));
+    // app.use(serveFavicon("server/app/assets/favicon.ico"));
+    app.use(serveStatic("server/app/assets", {}));
 
     //app dispatcher
-    app.use("/bp", blockPlanner);
+    app.use("/", blockPlanner);
 
 
 
@@ -25,7 +25,7 @@ module.exports = (function() {
     app.use(defaultErrorHandler);
 
     app.engine("html", require('ejs').renderFile);
-    app.set("views", "server/apps")
+    app.set("views", "server/app");
 
     //
     return app;

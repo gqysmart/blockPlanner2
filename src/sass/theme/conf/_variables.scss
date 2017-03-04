@@ -1,8 +1,7 @@
-$font-family: 'Roboto', sans-serif;
-
+$font-family: 'Roboto',
+sans-serif;
 $activelink: $primary;
 $hoverlink: $primary-dark;
-
 $resXXL: 1280px;
 $resXL: 1170px;
 $resL: 991px;
@@ -11,27 +10,22 @@ $resS: 660px;
 $resXS: 500px;
 $resXXS: 435px;
 $resMin: 320px;
-
 $top-height: 66px;
-
 $small-panel-height: 114px;
 $xsmall-panel-height: 187px;
 $medium-panel-height: 400px;
 $extra-medium-panel-height: 550px;
 $large-panel-height: 974px;
-
 $default-animation-duration: 0.2s;
 $default-animation-style: ease-out;
-
-$assets-root: '../assets/';
-$images-root: $assets-root + 'img/';
-$fonts-root: $assets-root + 'fonts/';
+$assets-root: '../';
+$images-root: $assets-root+'images/';
+$fonts-root: $assets-root+'fonts/';
 $font-thin: 100;
 $font-light: 300;
 $font-normal: 400;
 $font-bold: 700;
 $font-ultraBold: 900;
-
 $facebook-color: #3b5998;
 $twitter-color: #55acee;
 $google-color: #dd4b39;

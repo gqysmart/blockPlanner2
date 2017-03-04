@@ -16,7 +16,7 @@ gulp.task("clean", function() {
     return $plugins.del([path.join(conf.paths.tmp, "/"), path.join(conf.paths.dist, conf.appName)]);
 });
 
-gulp.task("build", ["html"]);
+gulp.task("build", ["html", "fonts", "other"]);
 
 
 
@@ -79,7 +79,24 @@ gulp.task("revisionReplace", ["revision"], function() {
         .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName)));
 
 
+});
 
+gulp.task('fonts', function() {
+    return gulp.src($plugins.mainBowerFiles('**/*.{eot,svg,ttf,woff,woff2}'))
+        .pipe($plugins.flatten())
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, 'assets/fonts/')));
+});
 
+gulp.task('other', ['copyVendorImages'], function() {
+    var fileFilter = $plugins.filter(function(file) {
+        return file.stat.isFile();
+    });
 
-})
+    return gulp.src([
+            path.join(conf.paths.src, '**/*'),
+            path.join('!' + conf.paths.src, '/**/*.{html,css,js,scss,md}'),
+            path.join(conf.paths.tmp, conf.appName, '**/assets/imgages/theme/vendor/**/*')
+        ])
+        .pipe(fileFilter)
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, '/')));
+});
