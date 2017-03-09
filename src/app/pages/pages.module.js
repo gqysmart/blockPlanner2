@@ -20,20 +20,16 @@
             title: 'Pages',
             icon: 'ion-document',
             subMenu: [{
-                title: 'Sign In',
-                fixedHref: 'auth.html',
-                blank: true
+                title: '登录',
+                fixedHref: '/login',
+
             }, {
-                title: 'Sign Up',
-                fixedHref: 'reg.html',
-                blank: true
+                title: '注册',
+                fixedHref: '/signup',
+
             }, {
                 title: 'User Profile',
                 stateRef: 'profile'
-            }, {
-                title: '404 Page',
-                fixedHref: '404.html',
-                blank: true
             }]
         });
 

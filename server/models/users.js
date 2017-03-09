@@ -21,7 +21,6 @@ const oAuthTypes = [
 const UserSchema = new Schema({
     name: { type: String, default: "" },
     email: { type: String, default: "" },
-    username: { type: String, default: "" },
     provider: { type: String, default: "" },
     hashed_password: { type: String, default: "" },
     salt: { type: String, default: "" },
@@ -39,7 +38,7 @@ UserSchema
 
         this._password = password;
         this.salt = this.makeSalt();
-        this.hashed_password = this.encrytPassword(password);
+        this.hashed_password = this.encryptPassword(password);
     })
     .get(function() {
         return this._password;
@@ -74,11 +73,6 @@ UserSchema.path('email').validate(function(email, fn) {
 
 }, "email already exists.");
 
-UserSchema.path('username').validate(function(username) {
-    if (this.skipValidation()) return true;
-    return username.length;
-}, 'Username cannot be blank');
-
 UserSchema.path('hashed_password').validate(function(hashed_password) {
     if (this.skipValidation()) return true;
     return hashed_password.length && this._password.length;
@@ -108,6 +102,7 @@ UserSchema.methods = {
         return Math.round((new Date().valueOf() * Math.random())) + '';
     },
     encryptPassword: function(password) {
+
         if (!password) return '';
         try {
             return crypto
@@ -115,7 +110,7 @@ UserSchema.methods = {
                 .update(password)
                 .digest('hex');
         } catch (err) {
-            return '';
+            return 'encrypt error';
         }
     },
 

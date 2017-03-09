@@ -39,7 +39,7 @@ gulp.task("inject", ["scripts", "styles", "injectAuth", "inject404", "copyVendor
         addRootSlash: false
     };
 
-    return gulp.src(path.join(conf.paths.src, 'index.html'))
+    return gulp.src(path.join(conf.paths.src, 'index.ejs'))
         .pipe($plugins.inject(partialsInjectFile, partialsInjecOptions))
         .pipe($plugins.inject(injectStyles, injectOptions))
         .pipe($plugins.inject(injectScripts, injectOptions))
@@ -51,14 +51,14 @@ gulp.task("inject", ["scripts", "styles", "injectAuth", "inject404", "copyVendor
 gulp.task("injectAuth", ["stylesAuth"], function() {
     return injectAlone({
         css: [path.join("!" + conf.paths.tmp, conf.appName, "/styles/vendor.css"), path.join(conf.paths.tmp, conf.appName, "/styles/auth.css")],
-        paths: [path.join(conf.paths.src, "/auth.html"), path.join(conf.paths.src, "/reg.html")]
+        paths: [path.join(conf.paths.src, "/auth.ejs"), path.join(conf.paths.src, "/reg.ejs")]
     });
 });
 
 gulp.task('inject404', ['styles404'], function() {
     return injectAlone({
         css: [path.join('!' + conf.paths.tmp, conf.appName, '/styles/vendor.css'), path.join(conf.paths.tmp, conf.appName, '/styles/404.css')],
-        paths: path.join(conf.paths.src, '/404.html')
+        paths: path.join(conf.paths.src, '/404.ejs')
     });
 });
 

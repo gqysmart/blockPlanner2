@@ -15,7 +15,9 @@ exports.requiresLogin = function(req, res, next) {
 exports.user = {
     hasAuthorization: function(req, res, next) {
         if (req.profile.id != req.user.id) {
-
+            req.flash("info", "you are not authorized")
+            return res.redirect("/users/" + req.profile.id)
         }
+        next();
     }
 }

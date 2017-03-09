@@ -22,10 +22,10 @@ gulp.task("build", ["html", "fonts", "other"]);
 
 gulp.task("html", ["inject", "partials"], function() {
 
-    var htmlFilter = $plugins.filter("**/*.html", { restore: true, dot: true });
+    var htmlFilter = $plugins.filter("**/*.ejs", { restore: true, dot: true });
     var jsFilter = $plugins.filter("**/*.js", { restore: true, dot: true });
     var cssFilter = $plugins.filter("**/*.css", { restore: true, dot: true });
-    return gulp.src([path.join(conf.paths.tmp, conf.appName, "*.html")])
+    return gulp.src([path.join(conf.paths.tmp, conf.appName, "*.ejs")])
         .pipe(useref({
             transformPath: function(filePath) {
                 return filePath;
@@ -72,7 +72,7 @@ gulp.task("revision", ["html"], function() {
 gulp.task("revisionReplace", ["revision"], function() {
 
     var manifest = gulp.src(path.join(conf.paths.tmp, conf.appName, "rev-mainfest.json"));
-    return gulp.src(path.join(conf.paths.tmp, conf.appName, "*.html"))
+    return gulp.src(path.join(conf.paths.tmp, conf.appName, "*.ejs"))
         .pipe($plugins.revReplace({
             manifest: manifest
         }))
