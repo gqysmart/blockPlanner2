@@ -9,7 +9,6 @@ angular.module('BlurAdmin', [
     // 'toastr',
     // 'smart-table',
     // "xeditable",
-    'ui.slimscroll',
     // 'ngJsTree',
     // 'angular-progress-button-styles',
 

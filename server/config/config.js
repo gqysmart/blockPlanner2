@@ -3,7 +3,7 @@ module.exports = {
     port: 3200,
     ngDir: "server/ng/",
     appName: "BD",
-    appTitle: "BD Architecture",
+    appTitle: "GC Architecture",
     appDesc: "",
     email: "157900653@qq.com",
     sessionSecret: "hello,this world is  so good!",

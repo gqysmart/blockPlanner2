@@ -11,19 +11,18 @@ var $plugins = require("gulp-load-plugins")();
 gulp.task("styles", function() {
 
     var injectFiles = gulp.src([
-        path.join(conf.paths.src, "/sass/**/_*.scss",
-            "!" + path.join(conf.paths.src, "/sass/theme/conf/**/*.scss")
+        path.join(conf.paths.src, '/sass/**/_*.scss'),
+        // '!' + path.join(conf.paths.src, '/sass/theme/conf/**/*.scss'),
 
-        )
     ], { read: false });
 
     var injectOptions = {
         transform: function(filePath) {
-            filePath = filePath.replace(conf.path.src + /sass/, "");
-            return "@import" + filePath + ";";
+            filePath = filePath.replace(conf.paths.src + "/sass/", "");
+            return "@import '" + filePath + "';";
         },
-        startTag: "// injector",
-        endTag: "// endinjector",
+        starttag: '// injector',
+        endtag: '// endinjector',
         addRootSlash: false
 
     };
