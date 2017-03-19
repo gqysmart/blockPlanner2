@@ -7,7 +7,8 @@
 
     angular.module('BlurAdmin.pages', [
             'ui.router',
-            'BlurAdmin.pages.dashboard'
+            'BlurAdmin.pages.dashboard',
+            "BlurAdmin.pages.projectInfo"
             // 'BlurAdmin.pages.charts',
         ])
         .config(routeConfig);

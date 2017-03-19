@@ -48,20 +48,22 @@ module.exports = function(app, passport) {
 
     app.get("/scripts/*.js", assets.getJS);
 
+    //fonts
+    app.get('/fonts/*', assets.getFont);
 
-    app.use(function(req, res) {
+    //profile picture
+    app.get('/img/profile/*', assets.getAvanta);
 
-        // assume 404 since no middleware responded
-        app.use(function(req, res) {
-            const payload = {
-                url: req.originalUrl,
-                error: 'Not found'
-            };
-            if (req.accepts('json')) return res.status(404).json(payload);
-            res.status(404).render('404', payload);
-        });
+    // assume 404 since no middleware responded
+    // app.use(function(req, res) {
+    //     const payload = {
+    //         url: req.originalUrl,
+    //         error: 'Not found'
+    //     };
+    //     if (req.accepts('json')) return res.status(404).json(payload);
+    //     res.status(404).render('404', payload);
+    // });
 
-    })
 
 
 

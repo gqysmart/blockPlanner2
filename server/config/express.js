@@ -39,7 +39,7 @@ module.exports = function(app, passport) {
     //add middleware here!
     //static resourse
     // app.use(serveFavicon("server/app/assets/favicon.ico"));
-    app.use(serveStatic("server/app/assets", {}));
+    app.use(serveStatic("server/app/public", {}));
 
     //log:use winston on production
     let log = "dev";
@@ -103,7 +103,7 @@ module.exports = function(app, passport) {
 
     // app.engine("html", require('ejs').renderFile);
     app.set("view engine", "ejs");
-    app.set("views", "server/app");
+    app.set("views", "server/app/assets/views");
 
     //
     return app;

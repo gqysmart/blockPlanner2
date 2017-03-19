@@ -16,7 +16,7 @@ gulp.task("clean", function() {
     return $plugins.del([path.join(conf.paths.tmp, "/"), path.join(conf.paths.dist, conf.appName)]);
 });
 
-gulp.task("build", ["html", "fonts", "other"]);
+gulp.task("build", ["html", "fonts", "public", "other"]);
 
 
 
@@ -36,11 +36,13 @@ gulp.task("html", ["inject", "partials"], function() {
         .pipe($plugins.ngAnnotate())
         // .pipe($plugins.uglify())
         // .pipe($plugins.sourcemaps.write("maps"))
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, "assets")))
         .pipe(jsFilter.restore)
         .pipe(cssFilter)
         // .pipe($plugins.sourcemaps.init())
         // .pipe($plugins.minifyCss({ processImport: false }))
         // .pipe($plugins.sourcemaps.write("maps"))
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, "assets")))
         .pipe(cssFilter.restore)
         //     //     //     .pipe($plugins.rev())
 
@@ -52,9 +54,9 @@ gulp.task("html", ["inject", "partials"], function() {
         //     conservativeCollapse: true,
         //     collapseInlineTagWhitespace: true
         // }))
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, "assets/views")))
         .pipe(htmlFilter.restore)
-        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, ".")));
-    // .pipe($plugins.size({ title: path.join(conf.paths.dist, "/"), showFiles: true }))
+        // .pipe($plugins.size({ title: path.join(conf.paths.dist, "/"), showFiles: true }))
 
 
 
@@ -84,7 +86,7 @@ gulp.task("revisionReplace", ["revision"], function() {
 gulp.task('fonts', function() {
     return gulp.src($plugins.mainBowerFiles('**/*.{eot,svg,ttf,woff,woff2}'))
         .pipe($plugins.flatten())
-        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, 'assets/fonts/')));
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, 'public/fonts/')));
 });
 
 gulp.task('other', ['copyVendorImages'], function() {
@@ -93,10 +95,10 @@ gulp.task('other', ['copyVendorImages'], function() {
     });
 
     return gulp.src([
-            path.join(conf.paths.src, '**/*'),
-            path.join('!' + conf.paths.src, '/**/*.{html,css,js,scss,md}'),
-            path.join(conf.paths.tmp, conf.appName, '**/assets/imgages/theme/vendor/**/*')
+            path.join(conf.paths.src, 'assets/**'),
+            // path.join('!' + conf.paths.src, '/**/*.{html,ejs,css,js,scss,md}'),
+            // path.join(conf.paths.tmp, conf.appName, '**/assets/imgages/theme/vendor/**/*')
         ])
         .pipe(fileFilter)
-        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, '/')));
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, 'assets')));
 });
