@@ -7,6 +7,8 @@
 
     angular.module('BlurAdmin.pages', [
             'ui.router',
+            'ui.select',
+            'ngSanitize',
             'BlurAdmin.pages.dashboard',
             "BlurAdmin.pages.projectInfo"
             // 'BlurAdmin.pages.charts',

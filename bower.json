@@ -31,7 +31,12 @@
     "font-awesome": "^4.7.0",
     "angular-ui-select": "^0.19.6",
     "angular-animate": "^1.6.3",
-    "animate.css": "^3.5.2"
+    "animate.css": "^3.5.2",
+    "angular-xeditable": "^0.6.0",
+    "angular-sanitize": "^1.6.3",
+    "bootstrap-select": "^1.12.2",
+    "angular-file-upload": "^2.5.0",
+    "ng-table": "^4.0.0"
   },
   "overrides": {
     "bootstrap": {
