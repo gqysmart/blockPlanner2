@@ -36,7 +36,8 @@
     "angular-sanitize": "^1.6.3",
     "bootstrap-select": "^1.12.2",
     "angular-file-upload": "^2.5.0",
-    "ng-table": "^4.0.0"
+    "ng-table": "1.0.0",
+    "lodash": "^4.17.4"
   },
   "overrides": {
     "bootstrap": {

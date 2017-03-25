@@ -8,9 +8,14 @@
     angular.module('BlurAdmin.pages', [
             'ui.router',
             'ui.select',
+            'ngTable',
             'ngSanitize',
             'BlurAdmin.pages.dashboard',
-            "BlurAdmin.pages.projectInfo"
+            "BlurAdmin.pages.projectInfo",
+            "BlurAdmin.pages.blockPlanner",
+            "BlurAdmin.pages.cost",
+
+
             // 'BlurAdmin.pages.charts',
         ])
         .config(routeConfig);

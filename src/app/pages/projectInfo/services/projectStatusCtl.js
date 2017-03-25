@@ -5,7 +5,7 @@
 (function() {
     'use strict';
 
-    angular.module('BlurAdmin.pages')
+    angular.module('BlurAdmin.pages.projectInfo')
         .controller('ProjectStatusCtl', ProjectStatusCtl);
 
     /** @ngInject */
