@@ -29,6 +29,13 @@
             "name": "debug test",
             "program": "${workspaceRoot}/gulp/styles.js",
             "cwd": "${workspaceRoot}"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "mongodb",
+            "program": "${workspaceRoot}/db/costRulesDatabase.js",
+            "cwd": "${workspaceRoot}"
         }
 
 
