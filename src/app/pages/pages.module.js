@@ -10,6 +10,7 @@
             'ui.select',
             'ngTable',
             'ngSanitize',
+            'ui.bootstrap',
             'BlurAdmin.pages.dashboard',
             "BlurAdmin.pages.projectInfo",
             "BlurAdmin.pages.blockPlanner",

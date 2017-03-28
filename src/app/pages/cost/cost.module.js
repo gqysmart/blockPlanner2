@@ -24,7 +24,7 @@
             })
             .state('cost.rules', {
                 url: '/costRules',
-                templateUrl: "app/pages/cost/costRules.html",
+                templateUrl: "app/pages/cost/costItemsShow.html",
                 title: '成本规则列表',
                 sidebarMeta: {
                     icon: 'ion-android-home',

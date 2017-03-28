@@ -282,7 +282,7 @@ var costCalRuleList = [{
             base: [],
             oper: "#",
             desc: {
-                cn: "直接数"
+                cn: "无缺省值直接数"
             }
         }
     },

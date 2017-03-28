@@ -9,7 +9,7 @@ module.exports = {
     sessionSecret: "hello,this world is  so good!",
 
     //db
-    dbUrl: "mongodb://localhost/goodcity"
+    dbUrl: "mongodb://localhost/bd"
 
 
 };
