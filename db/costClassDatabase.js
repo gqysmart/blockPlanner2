@@ -9,7 +9,7 @@ const co = require("co");
 const GCDBConnString = "mongodb://localhost:27017/goodcity";
 const testConnString = "mongodb://localhost:27017/test";
 const termCollection = "terminology";
-const costCalRules = "costCalRules";
+const costClasses = "costClasses";
 
 
 const costNamePrefix = "goodcity.cost.";
@@ -69,8 +69,8 @@ co(function*() {
     try {
 
         var i = 0;
-        while (i < costCalRuleList.length) {
-            var rule = costCalRuleList[i];
+        while (i < costClassList.length) {
+            var rule = costClassList[i];
             var parentName = rule.parentName;
             var classNameID = 0;
             if (parentName != null) {
@@ -79,19 +79,11 @@ co(function*() {
 
             var newRule = {
                 nameID: yield qualifiedName2TermID(db, rule.name),
-                classNameID: classNameID,
-
-                compute: {
-                    rule: rule.computeRule.oper,
-                    desc: rule.computeRule.desc,
-                    deps: yield parseDependenceList(db, rule.computeRule.base)
-                }
-
-
+                classNameID: classNameID
 
             };
 
-            yield db.collection(costCalRules).insertOne(newRule);
+            yield db.collection(costClasses).insertOne(newRule);
             i++;
 
         }
@@ -107,19 +99,7 @@ co(function*() {
 
 });
 
-function* parseDependenceList(db, originList) {
-    var result = [];
-    var i = 0;
-    while (i < originList.length) {
-        var dependency = originList[i];
-        result.push(yield qualifiedName2TermID(db, dependency.name));
 
-        i++
-    }
-    return result;
-
-
-}
 
 function* qualifiedName2TermID(db, qName) {
     var nameList = qName.split(".");
@@ -141,150 +121,77 @@ function* qualifiedName2TermID(db, qName) {
     return resultTermID;
 };
 
-var costCalRuleList = [{
+var costClassList = [{
         name: nameTotalCostofProject,
-        computeRule: {
-            base: [],
-            oper: "AS=$0", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
-            desc: {
-                cn: "由子级自动计算"
-            }
-        }
+        parentName: null,
 
     },
     {
         name: nameCostofDevelopment,
-        computeRule: {
-            base: [],
-            oper: "AS=$0", //(WS@http://goodcity.net/{{1}}/{{2}}=$0)
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameTotalCostofProject,
+
     }, {
         name: namePeriodCost,
-        computeRule: {
-            base: [],
-            oper: "AS=$0", //#
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameTotalCostofProject,
+
     },
     {
         name: nameInvestmentWithoutTax,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
+        parentName: nameTotalCostofProject,
 
-
-        }
     },
     {
         name: nameTaxDuringDevelopment,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameTotalCostofProject,
+
     },
     //开发成本计算
 
     {
         name: nameLandCost,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameCostofDevelopment,
+
     },
     {
         name: nameEarlierStageCost,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameCostofDevelopment,
+
     },
     {
         name: nameConstructionAndInstallationCost,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameCostofDevelopment,
+
     },
     {
         name: nameInfrastructureCost,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameCostofDevelopment,
+
     },
     {
         name: namePublicSupportingFacilitiesCost,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameCostofDevelopment,
+
     },
     {
         name: nameUnforeseeableCost,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameCostofDevelopment,
+
     },
     {
         name: nameIndirectCost,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameCostofDevelopment,
+
     },
     {
         name: nameCapitalizedInterest,
-        computeRule: {
-            base: [],
-            oper: "AS=$0",
-            desc: {
-                cn: "由子级计算"
-            }
-        }
+        parentName: nameCostofDevelopment,
+
     },
     //土地费用
     {
         name: namePriceOfLand,
-        computeRule: {
-            base: [],
-            oper: "#",
-            desc: {
-                cn: "直接数"
-            }
-        }
+        parentName: nameLandCost,
+
     },
 
 
