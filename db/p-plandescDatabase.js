@@ -47,15 +47,6 @@ co(function*() {
 });
 
 
-var costplanSchema = {
-    //project 1--->n plan
-    //name in project
-    //方案可以与其他项目共享，因此没有特定标记
-    cost: {
-        class: { type: "clone/copy", target: {}, cad: { create: [], add: [], delete: [] } },
-        caculateRule: { type: "clone/copy", target: {}, cad: { create: [], add: [], delete: [] } }
-    }
-};
 
 
 var userInfoSchema = {

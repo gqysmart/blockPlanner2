@@ -117,7 +117,7 @@ var plan = {
             target: "ref"
         }, {
             type: "营销...财务...运维...等等"
-        } { type: "成本级别", target: "ref" }, {
+        }, { type: "成本级别", target: "ref" }, {
             type: "自定义术语",
             target: "ref"
         },
@@ -125,6 +125,7 @@ var plan = {
             type: "支付方式"
         }
     ],
+    relation: [], //克隆，关联，拷贝关系怎么查找？，因为对象是细化分别对待的。有个关系链。
     result: [
         { type: "cost", target: "ref" },
         {
@@ -133,3 +134,14 @@ var plan = {
         }
     ]
 }
+
+
+var costplanSchema = {
+    //project 1--->n plan
+    //name in project
+    //方案可以与其他项目共享，因此没有特定标记
+    cost: {
+        class: { type: "clone/copy", target: {}, cad: { create: [], add: [], delete: [] } },
+        caculateRule: { type: "clone/copy", target: {}, cad: { create: [], add: [], delete: [] } }
+    }
+};

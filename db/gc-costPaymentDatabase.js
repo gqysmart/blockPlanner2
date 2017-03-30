@@ -8,8 +8,9 @@ const assert = require("assert");
 const co = require("co");
 const GCDBConnString = "mongodb://localhost:27017/goodcity";
 const testConnString = "mongodb://localhost:27017/test";
-const termCollection = "terminology";
-const costRules = "costRules";
+const version = "v1"
+const termCollection = "architecture.terminology" + version;
+const costRules = "architecture.costRules" + version;
 
 
 const costNamePrefix = "goodcity.cost.";
@@ -130,7 +131,7 @@ function* parseDependenceList(db, originList) {
 function* qualifiedName2TermID(db, qName) {
     var nameList = qName.split(".");
     var i = 0;
-    var resultTermID = 0;
+    var resultTermID = null;
     var name;
     var termObject;
     while (i < nameList.length) {

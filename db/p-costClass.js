@@ -8,7 +8,7 @@ const assert = require("assert");
 const co = require("co");
 const GCDBConnString = "mongodb://localhost:27017/goodcity";
 const testConnString = "mongodb://localhost:27017/test";
-const version = "v1"
+const version = "v1.0"
 const termCollection = "architecture.terminology" + version;
 const costCalRules = "architecture.costCalRules" + version;
 
@@ -18,50 +18,11 @@ const nameCostofDevelopment = costNamePrefix + "costofdevelopment"; //开发成�
 const nameTotalCostofDevelopmentPerSquareMetre = (costNamePrefix + "CostofDevelopmentPerSquareMetre").toLowerCase(); //每平方米开发成本
 const nameCostofDevelopmentPerSquareMetre = (costNamePrefix + "CostofDevelopmentPerSquareMetre").toLowerCase(); //每平方米开发成本
 
-
-const namePeriodCost = costNamePrefix + "periodcost"; //期间费用
-const nameInvestmentWithoutTax = costNamePrefix + "investmentwithouttax"; //不含税费总投
-const nameTaxDuringDevelopment = costNamePrefix + "taxduringdevelopment"; //开发期间税费
-const nameTotalCostofProject = costNamePrefix + "totalcostofproject"; //项目总成本
-
-//leve2 cost
-const nameLandCost = (costNamePrefix + "landcost").toLowerCase(); //土地费
-const nameEarlierStageCost = (costNamePrefix + "EarlierStageCost").toLowerCase(); //前期工程费
-const nameConstructionAndInstallationCost = (costNamePrefix + "ConstructionAndInstallationCost").toLowerCase(); //建筑安装工程费
-const nameInfrastructureCost = (costNamePrefix + "InfrastructureCost").toLowerCase(); //基础设施费
-const namePublicSupportingFacilitiesCost = (costNamePrefix + "PublicSupportingFacilitiesCost").toLowerCase(); //公共配套设施费
-const nameUnforeseeableCost = (costNamePrefix + "unforeseeablecost").toLowerCase(); //不可预见费
-const nameIndirectCost = (costNamePrefix + "IndirectCost").toLowerCase(); //开发间接费
-const nameCapitalizedInterest = (costNamePrefix + "CapitalizedInterest").toLowerCase(); //资本化利息
-
-//level3 cost
-const namePriceOfLand = (costNamePrefix + "PriceOfLand").toLowerCase(); //土地价格
-
-
-
-
-
-//设计变量名
-const designNamePrefix = "goodcity.design.";
-const nameTotalCapacityBulidingArea = (designNamePrefix + "totalcapacitybuildingarea").toLowerCase(); //总计容面积
-const nameTotalFloorArea = (designNamePrefix + "totalFloorArea").toLowerCase(); //总建筑面积
-
-//单位变量名
-const unitNamePrefix = "goodcity.unit.";
-const currencyUnitNamePrefix = (unitNamePrefix + "currency.").toLowerCase(); //货币
-const areaUnitNamePrefix = (unitNamePrefix + "area").toLowerCase(); //面积
-const yuan = (currencyUnitNamePrefix + "yuan").toLowerCase(); //元
-const squreMetre = (areaUnitNamePrefix + "squareMetre").toLowerCase(); //平方米
-//财务变量名
-const financeNamePrefix = "goodcity.fiance.";
-
-//运维变量名
-const operAndMaintanceNamePrefix = "goodcity.operationandmaintance.";
-const projectConstructStartTime = (operAndMaintanceNamePrefix + "projectConstructstartTime").toLowerCase(); //营造开始时间
-
-const projectConstructendTime = (operAndMaintanceNamePrefix + "projectConstructEndTime").toLowerCase(); //营造结束时间
-
-
+var origin = {
+    type: "origin", //copy clone bidirection copy has attribue target
+    attributes: {},
+    mad: { modify: [], add: [], delete: [] },
+}
 
 co(function*() {
     var db = yield MongoClient.connect(testConnString);
@@ -125,7 +86,7 @@ function* parseDependenceList(db, originList) {
 function* qualifiedName2TermID(db, qName) {
     var nameList = qName.split(".");
     var i = 0;
-    var resultTermID = null;
+    var resultTermID = 0;
     var name;
     var termObject;
     while (i < nameList.length) {

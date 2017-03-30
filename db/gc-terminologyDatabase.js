@@ -8,16 +8,16 @@ const assert = require("assert");
 const co = require("co");
 const GCDBConnString = "mongodb://localhost:27017/goodcity";
 const testConnString = "mongodb://localhost:27017/test";
-const termCollection = "terminology";
+const version = "v1"
+const termCollection = "architecture.terminology" + version;
 const rootTermID = 0;
 const gcTermID = 1;
 var termID = gcTermID;
 
 
 var termGC = {
-    _id: gcTermID,
+    //   _id: gcTermID,
     name: { en: "goodcity", cn: "江苏嘉城" },
-    parentID: rootTermID,
     desc: "WS@http://goodcity.net/companyInfo"
 }
 
@@ -51,7 +51,7 @@ co(function*() {
             var j = 0;
             while (j < childTermList.length) {
                 var childTermObject = childTermList[j];
-                childTermObject._id = createTermID();
+                //   childTermObject._id = createTermID();
                 childTermObject.parentID = parentID;
                 yield db.collection(termCollection).insertOne(childTermObject);
                 j++;
@@ -68,12 +68,12 @@ co(function*() {
 function* qulifiedName2TermID(db, qName) {
     var nameList = qName.split(".");
     var i = 0;
-    var resultTermID = 0;
+    var resultTermID = null;
     var name;
     var termObject;
     while (i < nameList.length) {
         name = nameList[i];
-        termObject = yield db.collection(termCollection).findOne({ parentID: resultTermID, "name.en": name }, { _id: 1 });
+        termObject = yield db.collection(termCollection).findOne({ parentID: resultTermID, "name.en": name });
         // termObject = yield { _id, 100 };
 
         resultTermID = termObject._id;

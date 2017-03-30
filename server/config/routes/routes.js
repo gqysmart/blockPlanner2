@@ -9,6 +9,7 @@ const conf = require("../config")
 const users = require("../../controllers/users.controller.server");
 const assets = require("../../controllers/assets.controller.server");
 const auth = require("../middlewares/authorization");
+const cost = require("../../controllers/cost.controller.server");
 const appTitle = conf.appTitle;
 const fail = {
     failureRedirect: "/login"
@@ -53,6 +54,10 @@ module.exports = function(app, passport) {
 
     //profile picture
     app.get('/img/profile/*', assets.getAvanta);
+
+    app.get("/test", cost.newCostClass)
+
+
 
     // assume 404 since no middleware responded
     // app.use(function(req, res) {

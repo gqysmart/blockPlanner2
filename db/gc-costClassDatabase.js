@@ -8,8 +8,9 @@ const assert = require("assert");
 const co = require("co");
 const GCDBConnString = "mongodb://localhost:27017/goodcity";
 const testConnString = "mongodb://localhost:27017/test";
-const termCollection = "terminology";
-const costClasses = "costClasses";
+const version = "v1"
+const termCollection = "architecture.terminology" + version;
+const costClasses = "architecture.costClasses" + version;
 
 
 const costNamePrefix = "goodcity.cost.";
@@ -72,16 +73,14 @@ co(function*() {
         while (i < costClassList.length) {
             var rule = costClassList[i];
             var parentName = rule.parentName;
-            var classNameID = 0;
+
+            var newRule = {};
             if (parentName != null) {
-                classNameID = yield qualifiedName2TermID(db, rule.parentName)
+                newRule.className = yield qualifiedName2TermID(db, rule.parentName)
             }
 
-            var newRule = {
-                nameID: yield qualifiedName2TermID(db, rule.name),
-                classNameID: classNameID
+            newRule.name = yield qualifiedName2TermID(db, rule.name);
 
-            };
 
             yield db.collection(costClasses).insertOne(newRule);
             i++;
@@ -104,7 +103,7 @@ co(function*() {
 function* qualifiedName2TermID(db, qName) {
     var nameList = qName.split(".");
     var i = 0;
-    var resultTermID = 0;
+    var resultTermID = null;
     var name;
     var termObject;
     while (i < nameList.length) {
@@ -123,7 +122,6 @@ function* qualifiedName2TermID(db, qName) {
 
 var costClassList = [{
         name: nameTotalCostofProject,
-        parentName: null,
 
     },
     {
