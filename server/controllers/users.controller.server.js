@@ -55,13 +55,13 @@ module.exports.signup = function(req, res) {
     respond(res, "reg", { title: appTitle });
 
 };
-exports.session = login;
+exports.actionAfterLogin = actionAfterLogin;
 
 /**
  * Login
  */
 
-function login(req, res) {
+function actionAfterLogin(req, res) {
     const redirectTo = req.session.returnTo ?
         req.session.returnTo :
         '/';

@@ -17,6 +17,7 @@ const Schema = mongoose.Schema;
  */
 
 const InitConfigSchema = new Schema({
+    version: String,
     name: { type: String, required: true },
     category: { type: String, required: true },
     value: {}

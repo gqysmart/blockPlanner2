@@ -9,7 +9,9 @@ const conf = require("../config")
 const users = require("../../controllers/users.controller.server");
 const assets = require("../../controllers/assets.controller.server");
 const auth = require("../middlewares/authorization");
-const cost = require("../../controllers/cost.controller.server");
+const planManager = require("../../managers/plan.manager.server");
+
+
 const appTitle = conf.appTitle;
 const fail = {
     failureRedirect: "/login"
@@ -38,7 +40,7 @@ module.exports = function(app, passport) {
             failureRedirect: '/login',
             failureFlash: 'Invalid email or password.'
         }),
-        users.session);
+        users.actionAfterLogin);
 
     app.get("/signup", users.signup);
 
@@ -55,7 +57,20 @@ module.exports = function(app, passport) {
     //profile picture
     app.get('/img/profile/*', assets.getAvanta);
 
-    app.get("/test", cost.newCostClass)
+    app.get("/test", auth.requiresLogin, function(req, res, next) {
+        var userID = req.user._id;
+        var projectInfo = null;
+        var project = projectController.createProject(userID, function(project) {
+
+
+
+            res.json(project);
+
+
+        });
+
+
+    })
 
 
 

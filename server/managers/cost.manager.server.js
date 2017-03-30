@@ -20,16 +20,14 @@ const CostClassRelation = mongoose.model("CostClassRelation");
 const CostClass = mongoose.model("CostClass");
 const InitConfig = mongoose.model("InitConfig");
 
-module.exports.newCostClass = function(req, res) {
-    createCostClass();
-
-};
+var costManager = {}
+module.exports = costManager;
 
 var inited = false;
 var originalCostClass = new CostClass();
 
 
-var createCostClass = async(function*(req, res, next) {
+costManager.createCostClass = async(function*(cb) {
     if (!inited) {
         var classConfig = yield InitConfig.findOne({ name: "inited", category: "costClass" });
         if (!classConfig) {
@@ -72,12 +70,12 @@ var createCostClass = async(function*(req, res, next) {
     }
 
     var costClass = copyCostClass(originalCostClass);
-    return costClass;
+    return cb(costClass.toObject());
 
 
 }); //新建成本层级关系管理
 
-var copyCostClass = async(function*(sourceClass) { //默认克隆所有属性
+costManager.copyCostClass = async(function*(sourceClass, cb) { //默认克隆所有属性
 
     var costClass = new CostClass();
     costClass.thisTag = new ObjectID();
@@ -91,7 +89,7 @@ var copyCostClass = async(function*(sourceClass) { //默认克隆所有属性
     yield CostClassRelation.insertMany(sourceClassRelations);
     var costClassDoc = yield costClass.save();
 
-    return costClass;
+    return cb(costClass.toObject());
 
 
 });
