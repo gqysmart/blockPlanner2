@@ -1,0 +1,14 @@
+{
+  "name": "architecture-planmanager",
+  "version": "1.0.0",
+  "description": "plan manager module",
+  "main": "dist/",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "plan"
+  ],
+  "author": "gqysmart@goodcity.net",
+  "license": "ISC"
+}

@@ -1,5 +1,5 @@
-/node_modules
+/**/node_modules
 /typings
-/bower_components
-/.tmp
-/server/app
+/**/bower_components
+/**/.tmp
+/**/dist

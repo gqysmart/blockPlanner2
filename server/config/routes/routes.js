@@ -57,7 +57,9 @@ module.exports = function(app, passport) {
     //profile picture
     app.get('/img/profile/*', assets.getAvanta);
 
-    app.get("/test", auth.requiresLogin, function(req, res, next) {
+
+    app.param("projectId", )
+    app.get("project/:projectId/plan/:planId", function(req, res, next) {
         var userID = req.user._id;
         var projectInfo = null;
         var project = projectController.createProject(userID, function(project) {

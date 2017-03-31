@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        <%= title %>
+    </title>
+
+
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/img/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="assets/img/favicon-96x96.png">
+
+    <link rel="stylesheet" href="styles/vendor.css">
+
+    <link rel="stylesheet" href="styles/auth.css">
+</head>
+
+<body>
+    <main class="auth-main">
+        <div class="auth-block">
+            <h1>注册
+                <%title%>用户</h1>
+            <a href="/login" class="auth-link">已有账户? 登录!</a>
+
+            <form class="form-horizontal" action="/users" method="post" role="form">
+                <input type="hidden" name="_csrf" value="<%= csrf_token %>">
+                <div class="form-group">
+                    <label for="inputName3" class="col-sm-2 control-label">用户名</label>
+
+                    <div class="col-sm-10">
+                        <input name="name" type="text" class="form-control" id="inputName3" placeholder="username" >
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputEmail3" class="col-sm-2 control-label">电子邮箱</label>
+
+                    <div class="col-sm-10">
+                        <input name="email" type="email" class="form-control" id="inputEmail3" placeholder="Email">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputPassword3" class="col-sm-2 control-label">用户密码</label>
+
+                    <div class="col-sm-10">
+                        <input name="password" type="password" class="form-control" id="inputPassword3" placeholder="Password">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-10">
+                        <button type="submit" class="btn btn-default btn-auth">注册</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="auth-sep"><span><span>第三方一键注册</span></span>
+            </div>
+
+            <div class="al-share-auth">
+                <ul class="al-share clearfix">
+                    <li><i class="socicon socicon-weChat" title="Share on weChat"></i></li>
+                    <li><i class="socicon socicon-qq" title="Share on QQ"></i></li>
+                    <li><i class="socicon socicon-google" title="Share on Google Plus"></i></li>
+                </ul>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>
