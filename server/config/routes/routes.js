@@ -9,7 +9,7 @@ const conf = require("../config")
 const users = require("../../controllers/users.controller.server");
 const assets = require("../../controllers/assets.controller.server");
 const auth = require("../middlewares/authorization");
-const planManager = require("../../managers/plan.manager.server");
+//const planManager = require("../../managers/plan.manager.server");
 
 
 const appTitle = conf.appTitle;
@@ -28,7 +28,7 @@ module.exports = function(app, passport) {
     //user routes
     //home page
     app.get('/', auth.requiresLogin, function(req, res, next) {
-        res.render("index", { title: appTitle });
+        res.render("home/views/index", { title: appTitle });
         next();
     });
     app.get("/login", users.login);
@@ -45,34 +45,26 @@ module.exports = function(app, passport) {
     app.get("/signup", users.signup);
 
     ///resources
+    app.param("app", function(res, req, next, appname) {
 
-    app.get("/styles/*.css", assets.getCSS);
+        next();
+    });
+    app.get("/:app/styles/*.css", assets.getCSS);
 
 
-    app.get("/scripts/*.js", assets.getJS);
+    app.get("/:app/scripts/*.js", assets.getJS);
 
     //fonts
-    app.get('/fonts/*', assets.getFont);
+    app.get('/:app/fonts/*', assets.getFont);
 
     //profile picture
-    app.get('/img/profile/*', assets.getAvanta);
+    app.get('/:app/img/profile/*', assets.getAvanta);
 
 
-    app.param("projectId", )
     app.get("project/:projectId/plan/:planId", function(req, res, next) {
-        var userID = req.user._id;
-        var projectInfo = null;
-        var project = projectController.createProject(userID, function(project) {
 
 
-
-            res.json(project);
-
-
-        });
-
-
-    })
+    });
 
 
 
@@ -85,24 +77,6 @@ module.exports = function(app, passport) {
     //     if (req.accepts('json')) return res.status(404).json(payload);
     //     res.status(404).render('404', payload);
     // });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 };

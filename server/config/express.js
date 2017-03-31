@@ -103,7 +103,7 @@ module.exports = function(app, passport) {
 
     // app.engine("html", require('ejs').renderFile);
     app.set("view engine", "ejs");
-    app.set("views", "server/app/assets/views");
+    app.set("views", "server/app/assets/");
 
     //
     return app;

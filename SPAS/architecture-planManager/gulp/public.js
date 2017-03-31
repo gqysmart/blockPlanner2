@@ -9,7 +9,7 @@ var $plugins = require("gulp-load-plugins")({ pattern: ['gulp-*', 'main-bower-fi
 
 gulp.task("public", function() {
     gulp.src([path.join(conf.paths.src, "public/**")])
-        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, "public")));
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, "public/plan")));
 
 
 });

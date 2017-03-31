@@ -17,7 +17,7 @@ const appTitle = conf.appTitle;
  */
 
 module.exports.login = function(req, res) {
-    respond(res, "auth", { title: appTitle });
+    respond(res, "home/views/auth", { title: appTitle });
 };
 
 module.exports.load = async(function*(req, res, next, _id) {
@@ -45,7 +45,7 @@ module.exports.create = async(function*(req, res) {
         });
     } catch (err) {
         const errors = Object.keys(err.errors).map(field => err.errors[field].message);
-        respond(res, "reg", { title: appTitle });
+        respond(res, "home/views/reg", { title: appTitle });
 
     }
 

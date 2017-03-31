@@ -4,7 +4,6 @@ var gulp = require("gulp");
 var conf = require("./config");
 var path = require("path");
 var useref = require("gulp-useref");
-var package = require("../package");
 
 var $plugins = require("gulp-load-plugins")({ pattern: ['gulp-*', 'main-bower-files', 'del'] });
 
@@ -50,7 +49,7 @@ gulp.task("html", ["inject", "partials"], function() {
         //     conservativeCollapse: true,
         //     collapseInlineTagWhitespace: true
         // }))
-        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, "assets/views")))
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, "assets/plan/views")))
         .pipe(htmlFilter.restore)
         // .pipe($plugins.size({ title: path.join(conf.paths.dist, "/"), showFiles: true }))
 
@@ -64,7 +63,6 @@ gulp.task("revision", ["html"], function() {
         .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, ".")))
         .pipe($plugins.rev.manifest())
         .pipe(gulp.dest(path.join(conf.paths.tmp, conf.appName, ".")));
-
 });
 
 gulp.task("revisionReplace", ["revision"], function() {
@@ -76,13 +74,12 @@ gulp.task("revisionReplace", ["revision"], function() {
         }))
         .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName)));
 
-
 });
 
 gulp.task('fonts', function() {
     return gulp.src($plugins.mainBowerFiles('**/*.{eot,svg,ttf,woff,woff2}'))
         .pipe($plugins.flatten())
-        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, 'public/fonts/')));
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, 'public/plan/fonts/')));
 });
 
 gulp.task('other', ['copyVendorImages'], function() {
@@ -96,5 +93,5 @@ gulp.task('other', ['copyVendorImages'], function() {
             // path.join(conf.paths.tmp, conf.appName, '**/assets/imgages/theme/vendor/**/*')
         ])
         .pipe(fileFilter)
-        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, 'assets')));
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, 'assets/plan')));
 });

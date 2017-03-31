@@ -1,0 +1,82 @@
+<form ng-controller="costInfoCtl as costCtl">
+
+    <div class="form-group form-inline">
+        <div class="ng-cloak" ng-controller="landAccordanceOptionsCtl as optionsCtl">
+            <div class="form-group col-md-5">
+                <ui-select ng-model="landCtl.newRule.item" class="btn-group bootstrap-select form-control" ng-disabled="false" append-to-body="true" search-enabled="true">
+                    <ui-select-match placeholder="新增约定条目">
+                        <span> {{$select.selected.target}}</span>
+                    </ui-select-match>
+                    <ui-select-choices repeat="standardItem in optionsCtl.landAccordanceOptions | filter: $select.search" group-by="'catagory'">
+                        <span ng-bind-html="standardItem.target"></span>
+                    </ui-select-choices>
+                </ui-select>
+            </div>
+            <div class="form-group col-md-1">
+                <ui-select ng-model="landCtl.newRule.relation" class="btn-group bootstrap-select form-control" ng-disabled="false" append-to-body="true" search-enabled="true">
+                    <ui-select-match placeholder="==">
+                        <span> {{$select.selected}}</span>
+                    </ui-select-match>
+                    <ui-select-choices repeat="standardItem in optionsCtl.relationOptions | filter: $select.search">
+                        <span ng-bind-html="standardItem"></span>
+                    </ui-select-choices>
+                </ui-select>
+            </div>
+            <div class="form-group col-md-3">
+                <input type="text" class="form-control" id="input01" placeholder="请输入值" ng-model="landCtl.newRule.value">
+            </div>
+            <div class="form-group col-md-2">
+                <ui-select ng-model="landCtl.newRule.unit" class="btn-group bootstrap-select form-control" ng-disabled="false" append-to-body="true" search-enabled="true">
+                    <ui-select-match placeholder="单位">
+                        <span> {{$select.selected.name}}</span>
+                    </ui-select-match>
+                    <ui-select-choices repeat="standardItem in optionsCtl.unitOptions | filter: $select.search" group-by="'catagory'">
+                        <span ng-bind-html="standardItem.name"></span>
+                    </ui-select-choices>
+                </ui-select>
+            </div>
+            <button type="button" class="btn btn-default btn-with-icon" ng-click="landCtl.add()"><i class="ion-ios-plus-outline"></i>添加</button>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <table ng-table-dynamic="landCtl.tableParams with landCtl.cols " class="table table-bordered table-condensed table-hover editable-table" ng-form="landCtl.tableForm">
+            <colgroup>
+                <col width="20%" align="center"></col>
+                <col width="10%" align="center"></col>
+                <col width="20%" align="right"></col>
+                <col width="10%" align="center"></col>
+                <col width="40%" align="left"></col>
+            </colgroup>
+            <tr class="ng-table-group" ng-repeat-start="group in $groups">
+                <td colspan="5">
+                    <a href="" ng-click="group.$hideRows = !group.$hideRows">
+                        <span class="glyphicon" ng-class="{ 'glyphicon-chevron-right': group.$hideRows, 'glyphicon-chevron-down': !group.$hideRows }"></span>
+                        <strong>{{group.value}}</strong>
+                    </a>
+                </td>
+            </tr>
+            <tr ng-hide="group.$hideRows" ng-repeat="rule in group.data" ng-repeat-end>
+                <td ng-repeat="col in $columns">
+                    <span ng-if="col.dataType !=='command'">{{rule[col.field]}}</span>
+                    <button ng-if="col.dataType ==='command'" class="btn btn-danger btn-sm" ng-click="landCtl.del(rule)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    </button>
+                </td>
+            </tr>
+        </table>
+
+    </div>
+
+    <ul class=" btn-list clearfix ">
+        <li><button type="button " class="btn btn-default btn-with-icon "><i class="ion-archive "></i>保存</button></li>
+
+    </ul>
+
+
+
+
+
+
+
+</form>

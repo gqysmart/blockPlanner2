@@ -4,6 +4,7 @@ var gulp = require("gulp");
 var conf = require("./config");
 var path = require("path");
 var useref = require("gulp-useref");
+var through = require("through2");
 
 var $plugins = require("gulp-load-plugins")({ pattern: ['gulp-*', 'main-bower-files', 'del'] });
 gulp.task("test", function() {
@@ -54,7 +55,7 @@ gulp.task("html", ["inject", "partials"], function() {
         //     conservativeCollapse: true,
         //     collapseInlineTagWhitespace: true
         // }))
-        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, "assets/views")))
+        .pipe(gulp.dest(path.join(conf.paths.dist, conf.appName, "assets/plan/views")))
         .pipe(htmlFilter.restore)
         // .pipe($plugins.size({ title: path.join(conf.paths.dist, "/"), showFiles: true }))
 
