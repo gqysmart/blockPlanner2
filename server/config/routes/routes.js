@@ -9,7 +9,8 @@ const conf = require("../config")
 const users = require("../../controllers/users.controller.server");
 const assets = require("../../controllers/assets.controller.server");
 const auth = require("../middlewares/authorization");
-//const planManager = require("../../managers/plan.manager.server");
+const planManager = require("../../managers/plan.manager.server");
+const ObjectID = require("mongodb").ObjectID;
 
 
 const appTitle = conf.appTitle;
@@ -28,8 +29,7 @@ module.exports = function(app, passport) {
     //user routes
     //home page
     app.get('/', auth.requiresLogin, function(req, res, next) {
-        res.render("home/views/index", { title: appTitle });
-        next();
+        res.redirect("/home");
     });
     app.get("/login", users.login);
     //  app.get("/signup", users.sigup);
@@ -61,7 +61,20 @@ module.exports = function(app, passport) {
     app.get('/:app/img/profile/*', assets.getAvanta);
 
 
-    app.get("project/:projectId/plan/:planId", function(req, res, next) {
+    app.get("/project/:projectId/plan/:planId", function(req, res, next) {
+
+    });
+    app.get("/:app", function(req, res, next) {
+        //test plan
+        var app = req.params.app;
+        planManager.createPlan(new ObjectID(), function(plan) {
+
+            res.render(app + "/views/index");
+
+        })
+
+
+
 
 
     });

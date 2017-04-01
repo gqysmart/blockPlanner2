@@ -22,6 +22,26 @@
     </div>
     <div class="row">
         <div class="col-md-6">
+            <div ba-panel ba-panel-title="最近打开项目列表" ba-panel-class="with-scroll">
+                <ul class="btn-list clearfix">
+                    <li><a type="button" class="btn btn-default btn-with-icon" href="/plan"><i class="ion-archive"></i>项目名称1</button></li>
+                    <li><button type="button" class="btn btn-default btn-with-icon"><i class="ion-folder"></i>打开项目列表...</button></li>
+
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div ba-panel ba-panel-title="人事管理、组织架构管理" ba-panel-class="with-scroll">
+                <div ng-include="'app/pages/projectInfo/widgets/landInfoShow.html'"></div>
+                <ul class="btn-list clearfix">
+                    <li><button type="button" class="btn btn-default btn-with-icon" ui-sref="projectInfo.landInfoEdit"><i class="ion-archive"></i>编辑</button></li>
+
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
             <div ba-panel ba-panel-title="阶段相关的工作分页标签" ba-panel-class="with-scroll">
                 <h3>所有功能暂时按spa做，性能等以后再调整</h3>
                 <h3> 样式选用多标签样式</h3>

@@ -37,7 +37,8 @@
     "bootstrap-select": "^1.12.2",
     "angular-file-upload": "^2.5.0",
     "ng-table": "1.0.0",
-    "lodash": "^4.17.4"
+    "lodash": "^4.17.4",
+    "angular-ui-tree": "^2.22.5"
   },
   "overrides": {
     "bootstrap": {

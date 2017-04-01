@@ -7,29 +7,49 @@
 
     angular.module('BlurAdmin.pages.cost')
         .service('costInfo', costInfo);
-    var projectInfoCache = {};
+    var planCostClassCache = {};
     var cached = false;
 
     /** @ngInject */
     function costInfo($q, $http, $timeout) {
-        this.load = function(cb) {
+        this.loadCostClass = function(cb) {
             if (cached) {
                 if (cb) {
-                    return cb(projectInfoCache);
+                    return cb(planCostClassCache);
                 }
 
             } else {
                 $timeout(function() {
-                    projectInfoCache = {
+                    planCostClassCache = {
                         name: "xxxx",
-                        location: { city: '南京市', province: '江苏省' },
-                        number: "G235,G240",
-                        status: { task: '测算评估', stage: '拿地前' },
+                        costClass: [{
+                            name: "总成本",
+                            id: 0,
+                            childItems: [{
+                                    name: "建设成本",
+                                    id: 0,
+                                    childItems: [
+                                        { name: "土地成本", id: 0, childItems: [] },
+                                        { name: "前期成本", id: 0, childItems: [] },
+                                        { name: "建安成本", id: 0, childItems: [] },
+                                        { name: "基础设施费用", id: 0, childItems: [] },
+                                        { name: "公共设施费用", id: 0, childItems: [] },
+                                        { name: "未预见费用", id: 0, childItems: [] },
+                                        { name: "间接费", id: 0, childItems: [] },
+                                        { name: "财务利息", id: 0, childItems: [] },
+                                    ]
+                                },
+                                { name: "期间成本", id: 0, childItems: [] },
+                                { name: "期间投资不计税", id: 0, childItems: [] },
+                                { name: "开发期间税", id: 0, childItems: [] },
+
+                            ]
+                        }]
 
                     };
                     cached = true;
                     if (cb) {
-                        return cb(projectInfoCache);
+                        return cb(planCostClassCache);
                     }
 
                 }, 5600);
@@ -45,7 +65,7 @@
 
         };
 
-    }
+    };
 
 
     function qulifiedName2TermID(qName) {
@@ -72,7 +92,7 @@
             qulifiedName = parentTermObject.name.en + "@" + qulifiedName;
             matchedTermObject = parentTermObject;
         }
-    }
+    };
 
 
 

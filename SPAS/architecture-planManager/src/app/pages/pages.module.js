@@ -8,6 +8,7 @@
     angular.module('BlurAdmin.pages', [
             'ui.router',
             'ui.select',
+            'ui.tree',
             'ngTable',
             'ngSanitize',
             'ui.bootstrap',
@@ -15,7 +16,6 @@
             "BlurAdmin.pages.projectInfo",
             "BlurAdmin.pages.blockPlanner",
             "BlurAdmin.pages.cost",
-
 
             // 'BlurAdmin.pages.charts',
         ])

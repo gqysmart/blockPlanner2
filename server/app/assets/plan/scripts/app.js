@@ -9,6 +9,7 @@
     angular.module('BlurAdmin.pages', [
             'ui.router',
             'ui.select',
+            'ui.tree',
             'ngTable',
             'ngSanitize',
             'ui.bootstrap',
@@ -16,7 +17,6 @@
             "BlurAdmin.pages.projectInfo",
             "BlurAdmin.pages.blockPlanner",
             "BlurAdmin.pages.cost",
-
 
             // 'BlurAdmin.pages.charts',
         ])
@@ -836,595 +836,50 @@ angular.module('BlurAdmin', [
   }
 
 })();
-/**
- * @author v.lugovksy
- * created on 16.12.2015
- */
 (function() {
     'use strict';
 
-    costInfoCtl.$inject = ["$q", "$http", "$timeout"];
     angular.module('BlurAdmin.pages.cost')
-        .controller('costInfoCtl', costInfoCtl);
-    var projectInfoCache = {};
-    var cached = false;
+        .controller('BasicExampleCtrl', ['$scope', "costInfo", function($scope, costInfo) {
+            $scope.remove = function(scope) {
+                scope.remove();
+            };
 
-    /** @ngInject */
-    function costInfoCtl($q, $http, $timeout) {
-        this.load = function(cb) {
-            if (cached) {
-                if (cb) {
-                    return cb(projectInfoCache);
-                }
+            $scope.toggle = function(scope) {
+                scope.toggle();
+            };
 
-            } else {
-                $timeout(function() {
-                    projectInfoCache = {
-                        name: "xxxx",
-                        location: { city: '南京市', province: '江苏省' },
-                        number: "G235,G240",
-                        status: { task: '测算评估', stage: '拿地前' },
+            $scope.moveLastToTheBeginning = function() {
+                var a = $scope.data.pop();
+                $scope.data.splice(0, 0, a);
+            };
 
-                    };
-                    cached = true;
-                    if (cb) {
-                        return cb(projectInfoCache);
-                    }
+            $scope.newSubItem = function(scope) {
+                var nodeData = scope.$modelValue;
+                nodeData.nodes.push({
+                    id: nodeData.id * 10 + nodeData.nodes.length,
+                    title: nodeData.title + '.' + (nodeData.nodes.length + 1),
+                    nodes: []
+                });
+            };
 
-                }, 5600);
+            $scope.collapseAll = function() {
+                $scope.$broadcast('angular-ui-tree:collapse-all');
+            };
 
+            $scope.expandAll = function() {
+                $scope.$broadcast('angular-ui-tree:expand-all');
+            };
 
-            }
-
-
-        };
-
-        this.save = function(pi, cb) {
-            //send save quest to server.
-
-        };
-
-    }
+            costInfo.loadCostClass(function(classInfo) {
+                $scope.data = classInfo;
 
 
-    function qulifiedName2TermID(qName) {
-        var termID = 0;
+            });
 
+        }]);
 
-        return termID;
-    };
-
-    function termID2QulifiedName(termID) {
-        function findMatchedTermObject(termID) {
-            return {};
-        }
-
-        function trimEndPoint(name) {
-            return name;
-        }
-
-        var matchedTermObject = findMatchedTermObject(termID);
-        var parentTermObject = null;
-        var qulifiedName = matchedTermObject.name.en;
-        while (matchedTermObject.parentID != 0) {
-            parentTermObject = findMatchedTermObject(matchedTermObject.parentID);
-            qulifiedName = parentTermObject.name.en + "@" + qulifiedName;
-            matchedTermObject = parentTermObject;
-        }
-    }
-
-
-
-    var costItemDescList = [{
-        name: { refTermID: 37 },
-        parentName: { refTermID: 28 },
-        level: 1,
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "WS@http://www.goodctiy.net/{{1}}/{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        name: { refTermID: 37 },
-        parentName: { refTermID: 28 },
-        level: 1,
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-
-    }, {
-        name: { refTermID: 37 },
-        parentName: { refTermID: 28 },
-        level: 1,
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-
-    }, {
-        costID: 4,
-        NO: 4,
-        ParentID: 0,
-        level: 1,
-        name: "开发期间税费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-
-    }, {
-        costID: 5,
-        NO: 1,
-        ParentID: 1,
-        level: 2,
-        name: "土地费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 6,
-        NO: 2,
-        ParentID: 1,
-        level: 2,
-        name: "前期工程费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, , {
-        costID: 7,
-        NO: 3,
-        ParentID: 1,
-        level: 2,
-        name: "建筑安装工程费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 8,
-        NO: 7,
-        ParentID: 1,
-        level: 2,
-        name: "基础设施费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 9,
-        NO: 4,
-        ParentID: 1,
-        level: 2,
-        name: "公共配套设施费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 10,
-        NO: 5,
-        ParentID: 1,
-        level: 2,
-        name: "不可预见费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 11,
-        NO: 6,
-        ParentID: 1,
-        level: 2,
-        name: "开发间接费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 12,
-        NO: 8,
-        ParentID: 1,
-        level: 2,
-        name: "资本化利息",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }];
-
-})();
-/**
- * @author v.lugovksy
- * created on 16.12.2015
- */
-(function() {
-    'use strict';
-
-    costInfo.$inject = ["$q", "$http", "$timeout"];
-    angular.module('BlurAdmin.pages.cost')
-        .service('costInfo', costInfo);
-    var projectInfoCache = {};
-    var cached = false;
-
-    /** @ngInject */
-    function costInfo($q, $http, $timeout) {
-        this.load = function(cb) {
-            if (cached) {
-                if (cb) {
-                    return cb(projectInfoCache);
-                }
-
-            } else {
-                $timeout(function() {
-                    projectInfoCache = {
-                        name: "xxxx",
-                        location: { city: '南京市', province: '江苏省' },
-                        number: "G235,G240",
-                        status: { task: '测算评估', stage: '拿地前' },
-
-                    };
-                    cached = true;
-                    if (cb) {
-                        return cb(projectInfoCache);
-                    }
-
-                }, 5600);
-
-
-            }
-
-
-        };
-
-        this.save = function(pi, cb) {
-            //send save quest to server.
-
-        };
-
-    }
-
-
-    function qulifiedName2TermID(qName) {
-        var termID = 0;
-
-
-        return termID;
-    };
-
-    function termID2QulifiedName(termID) {
-        function findMatchedTermObject(termID) {
-            return {};
-        }
-
-        function trimEndPoint(name) {
-            return name;
-        }
-
-        var matchedTermObject = findMatchedTermObject(termID);
-        var parentTermObject = null;
-        var qulifiedName = matchedTermObject.name.en;
-        while (matchedTermObject.parentID != 0) {
-            parentTermObject = findMatchedTermObject(matchedTermObject.parentID);
-            qulifiedName = parentTermObject.name.en + "@" + qulifiedName;
-            matchedTermObject = parentTermObject;
-        }
-    }
-
-
-
-    var costItemDescList = [{
-        name: { refTermID: 37 },
-        parentName: { refTermID: 28 },
-        level: 1,
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "WS@http://www.goodctiy.net/{{1}}/{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        name: { refTermID: 37 },
-        parentName: { refTermID: 28 },
-        level: 1,
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-
-    }, {
-        name: { refTermID: 37 },
-        parentName: { refTermID: 28 },
-        level: 1,
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-
-    }, {
-        costID: 4,
-        NO: 4,
-        ParentID: 0,
-        level: 1,
-        name: "开发期间税费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-
-    }, {
-        costID: 5,
-        NO: 1,
-        ParentID: 1,
-        level: 2,
-        name: "土地费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 6,
-        NO: 2,
-        ParentID: 1,
-        level: 2,
-        name: "前期工程费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, , {
-        costID: 7,
-        NO: 3,
-        ParentID: 1,
-        level: 2,
-        name: "建筑安装工程费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 8,
-        NO: 7,
-        ParentID: 1,
-        level: 2,
-        name: "基础设施费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 9,
-        NO: 4,
-        ParentID: 1,
-        level: 2,
-        name: "公共配套设施费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 10,
-        NO: 5,
-        ParentID: 1,
-        level: 2,
-        name: "不可预见费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 11,
-        NO: 6,
-        ParentID: 1,
-        level: 2,
-        name: "开发间接费",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }, {
-        costID: 12,
-        NO: 8,
-        ParentID: 1,
-        level: 2,
-        name: "资本化利息",
-        rules: {
-            computeRule: {
-                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
-                oper: "{{1}}x{{2}}",
-                desc: "建筑面积*单方价格"
-            },
-            paymentRule: {
-                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
-                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
-                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
-            }
-        }
-    }];
-})();
+}());
 /**
  * @author v.lugovksy
  * created on 16.12.2015
@@ -1475,6 +930,320 @@ angular.module('BlurAdmin', [
 
     }
 
+
+
+    function qulifiedName2TermID(qName) {
+        var termID = 0;
+
+
+        return termID;
+    };
+
+    function termID2QulifiedName(termID) {
+        function findMatchedTermObject(termID) {
+            return {};
+        }
+
+        function trimEndPoint(name) {
+            return name;
+        }
+
+        var matchedTermObject = findMatchedTermObject(termID);
+        var parentTermObject = null;
+        var qulifiedName = matchedTermObject.name.en;
+        while (matchedTermObject.parentID != 0) {
+            parentTermObject = findMatchedTermObject(matchedTermObject.parentID);
+            qulifiedName = parentTermObject.name.en + "@" + qulifiedName;
+            matchedTermObject = parentTermObject;
+        }
+    };
+
+
+
+    var costItemDescList = [{
+        name: { refTermID: 37 },
+        parentName: { refTermID: 28 },
+        level: 1,
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "WS@http://www.goodctiy.net/{{1}}/{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+    }, {
+        name: { refTermID: 37 },
+        parentName: { refTermID: 28 },
+        level: 1,
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+
+    }, {
+        name: { refTermID: 37 },
+        parentName: { refTermID: 28 },
+        level: 1,
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+
+    }, {
+        costID: 4,
+        NO: 4,
+        ParentID: 0,
+        level: 1,
+        name: "开发期间税费",
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+
+    }, {
+        costID: 5,
+        NO: 1,
+        ParentID: 1,
+        level: 2,
+        name: "土地费",
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+    }, {
+        costID: 6,
+        NO: 2,
+        ParentID: 1,
+        level: 2,
+        name: "前期工程费",
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+    }, , {
+        costID: 7,
+        NO: 3,
+        ParentID: 1,
+        level: 2,
+        name: "建筑安装工程费",
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+    }, {
+        costID: 8,
+        NO: 7,
+        ParentID: 1,
+        level: 2,
+        name: "基础设施费",
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+    }, {
+        costID: 9,
+        NO: 4,
+        ParentID: 1,
+        level: 2,
+        name: "公共配套设施费",
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+    }, {
+        costID: 10,
+        NO: 5,
+        ParentID: 1,
+        level: 2,
+        name: "不可预见费",
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+    }, {
+        costID: 11,
+        NO: 6,
+        ParentID: 1,
+        level: 2,
+        name: "开发间接费",
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+    }, {
+        costID: 12,
+        NO: 8,
+        ParentID: 1,
+        level: 2,
+        name: "资本化利息",
+        rules: {
+            computeRule: {
+                base: [{ name: { refTermID: 7 } }, { name: { refTermID: 27 } }],
+                oper: "{{1}}x{{2}}",
+                desc: "建筑面积*单方价格"
+            },
+            paymentRule: {
+                base: [{ name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 27 } }, { name: { refTermID: 28 } }, { name: { refTermID: 28 } }],
+                oper: "everyMonth[{{1}}~{{2}}]:{{1}}/{{2}} || time[{{1}} - 4 ]:{{2}}*{{3}} ",
+                desc: "在期间，每月平均 ;然后 4个月后，一次性支付"
+            }
+        }
+    }];
+})();
+/**
+ * @author v.lugovksy
+ * created on 16.12.2015
+ */
+(function() {
+    'use strict';
+
+    costInfo.$inject = ["$q", "$http", "$timeout"];
+    angular.module('BlurAdmin.pages.cost')
+        .service('costInfo', costInfo);
+    var planCostClassCache = {};
+    var cached = false;
+
+    /** @ngInject */
+    function costInfo($q, $http, $timeout) {
+        this.loadCostClass = function(cb) {
+            if (cached) {
+                if (cb) {
+                    return cb(planCostClassCache);
+                }
+
+            } else {
+                $timeout(function() {
+                    planCostClassCache = {
+                        name: "xxxx",
+                        costClass: [{
+                            name: "总成本",
+                            id: 0,
+                            childItems: [{
+                                    name: "建设成本",
+                                    id: 0,
+                                    childItems: [
+                                        { name: "土地成本", id: 0, childItems: [] },
+                                        { name: "前期成本", id: 0, childItems: [] },
+                                        { name: "建安成本", id: 0, childItems: [] },
+                                        { name: "基础设施费用", id: 0, childItems: [] },
+                                        { name: "公共设施费用", id: 0, childItems: [] },
+                                        { name: "未预见费用", id: 0, childItems: [] },
+                                        { name: "间接费", id: 0, childItems: [] },
+                                        { name: "财务利息", id: 0, childItems: [] },
+                                    ]
+                                },
+                                { name: "期间成本", id: 0, childItems: [] },
+                                { name: "期间投资不计税", id: 0, childItems: [] },
+                                { name: "开发期间税", id: 0, childItems: [] },
+
+                            ]
+                        }]
+
+                    };
+                    cached = true;
+                    if (cb) {
+                        return cb(planCostClassCache);
+                    }
+
+                }, 5600);
+
+
+            }
+
+
+        };
+
+        this.save = function(pi, cb) {
+            //send save quest to server.
+
+        };
+
+    };
 
 
     function qulifiedName2TermID(qName) {
@@ -2653,18 +2422,18 @@ angular.module('BlurAdmin', [
 (function () {
   'use strict';
 
-  contentTop.$inject = ["$location", "$state"];
   angular.module('BlurAdmin.theme.components')
-      .directive('contentTop', contentTop);
+      .directive('backTop', backTop);
 
   /** @ngInject */
-  function contentTop($location, $state) {
+  function backTop() {
     return {
       restrict: 'E',
-      templateUrl: 'app/theme/components/contentTop/contentTop.html',
-      link: function($scope) {
-        $scope.$watch(function () {
-          $scope.activePageTitle = $state.current.title;
+      templateUrl: 'app/theme/components/backTop/backTop.html',
+      controller: function () {
+        $('#backTop').backTop({
+          'position': 200,
+          'speed': 100
         });
       }
     };
@@ -2678,18 +2447,18 @@ angular.module('BlurAdmin', [
 (function () {
   'use strict';
 
+  contentTop.$inject = ["$location", "$state"];
   angular.module('BlurAdmin.theme.components')
-      .directive('backTop', backTop);
+      .directive('contentTop', contentTop);
 
   /** @ngInject */
-  function backTop() {
+  function contentTop($location, $state) {
     return {
       restrict: 'E',
-      templateUrl: 'app/theme/components/backTop/backTop.html',
-      controller: function () {
-        $('#backTop').backTop({
-          'position': 200,
-          'speed': 100
+      templateUrl: 'app/theme/components/contentTop/contentTop.html',
+      link: function($scope) {
+        $scope.$watch(function () {
+          $scope.activePageTitle = $state.current.title;
         });
       }
     };
@@ -2873,7 +2642,7 @@ angular.module('BlurAdmin').run(['$templateCache', function($templateCache) {$te
 $templateCache.put('app/pages/blockPlanner/blockPlannerManager.html','<ul><li>\u65B9\u68481</li><li>\u65B9\u68482</li><li>\u65B9\u6848n</li><button>\u65B0\u5EFA\u7A7A\u65B9\u6848</button> <button>\u62F7\u8D1D\u6307\u5B9A\u65B9\u6848</button><li>\u67E5\u770B\u3001\u8BC4\u8BBA</li></ul>');
 $templateCache.put('app/pages/blockPlanner/manualPlan.html','');
 $templateCache.put('app/pages/blockPlanner/newBlockPlan.html','<h4>\u8BBE\u8BA1\u6761\u4EF6</h4><ul><li>\u89C4\u5212\u8BBE\u8BA1\u8981\u6C42</li><li>\u6210\u672C\u8BBE\u8BA1\u8981\u6C42</li><li>\u5176\u4ED6\u5404\u90E8\u95E8\u8981\u6C42</li><li>\u667A\u80FD\u6700\u4F18\u5316\u7EC4\u5408\u65B9\u6848</li><li>\u4EBA\u5DE5\u65B9\u6848</li><li>\u590D\u5236\u3001\u514B\u9686/\u65B9\u6848\u8FDB\u5316\u53F2</li><li>\u5EFA\u7B51DSL\u8BED\u8A00/\u5730\u5757\u5EFA\u7B51\u8BA1\u5BB9\u9762\u79EF=\u5730\u5757\u9762\u79EF*\u5BB9\u79EF\u7387 \u672F\u8BED\u3001\u516C\u5F0F\u7B49api</li></ul><h4></h4>');
-$templateCache.put('app/pages/cost/costItemsShow.html','<div class="row"><div class="col-md-12"><div ba-panel ba-panel-title="\u65B9\u6848\u540D\u79F0" ba-panel-class="with-scroll"><uib-tabset active="$tabSetStatus.activeTab"><uib-tab heading="\u6210\u672C\u8BA1\u7B97\u8868"><p>Take up one idea. Make that one idea your life--think of it, dream of it, live on that idea. Let the brain, muscles, nerves, every part of your body, be full of that idea, and just leave every other idea alone. This is the way to success.</p><p>People who succeed have momentum. The more they succeed, the more they want to succeed, and the more they find a way to succeed. Similarly, when someone is failing, the tendency is to get on a downward spiral that can even become a self-fulfilling prophecy.</p><div class="text-center"><div class="kameleon-icon with-round-bg primary inline-icon"><img ng-src="{{::( \'Shop\' | kameleonImg )}}"></div><div class="kameleon-icon with-round-bg primary inline-icon"><img ng-src="{{::( \'Programming\' | kameleonImg )}}"></div><div class="kameleon-icon with-round-bg primary inline-icon"><img ng-src="{{::( \'Dna\' | kameleonImg )}}"></div></div><p>The reason most people never reach their goals is that they don\'t define them, or ever seriously consider them as believable or achievable. Winners can tell you where they are going, what they plan to do along the way, and who will be sharing the adventure with them.</p></uib-tab><uib-tab heading="\u6295\u8D44\u5468\u671F\u8868"><p>You can\'t connect the dots looking forward; you can only connect them looking backwards. So you have to trust that the dots will somehow connect in your future. You have to trust in something--your gut, destiny, life, karma, whatever. This approach has never let me down, and it has made all the difference in my life.</p><p>The reason most people never reach their goals is that they don\'t define them, or ever seriously consider them as believable or achievable. Winners can tell you where they are going, what they plan to do along the way, and who will be sharing the adventure with them.</p></uib-tab></uib-tabset></div></div></div>');
+$templateCache.put('app/pages/cost/costItemsShow.html','<div class="row"><div class="col-md-12"><div ba-panel ba-panel-title="\u6210\u672C\u5217\u8868" ba-panel-class="with-scroll"><uib-tabset><uib-tab heading="\u6210\u672C\u8BA1\u7B97\u8868"><!-- Nested node template --><script type="text/ng-template" id="nodes_renderer.html"><div ui-tree-handle class="tree-node tree-node-content">\n                            <a class="btn btn-success btn-xs" ng-if="node.childItems && node.childItems.length > 0" data-nodrag ng-click="toggle(this)"><span\n        class="glyphicon"\n        ng-class="{\n          \'glyphicon-chevron-right\': collapsed,\n          \'glyphicon-chevron-down\': !collapsed\n        }"></span></a> {{node.name}}\n                            <a class="pull-right btn btn-danger btn-xs" data-nodrag ng-click="remove(this)"><span\n        class="glyphicon glyphicon-remove"></span></a>\n                            <a class="pull-right btn btn-primary btn-xs" data-nodrag ng-click="newSubItem(this)" style="margin-right: 8px;"><span\n        class="glyphicon glyphicon-plus"></span></a>\n                        </div>\n                        <ol ui-tree-nodes="" ng-model="node.childItems" ng-class="{hidden: collapsed}">\n                            <li ng-repeat="node in node.childItems" ui-tree-node ng-include="\'nodes_renderer.html\'">\n                            </li>\n                        </ol></script><div class="row"><div class="col-sm-12"><h3>Basic Example</h3><button ng-click="expandAll()">Expand all</button> <button ng-click="collapseAll()">Collapse all</button></div></div><div class="row"><div class="col-sm-12"><div ui-tree id="tree-root" ng-controller="BasicExampleCtrl"><ol ui-tree-nodes ng-model="data"><li ng-repeat="node in data.costClass" ui-tree-node ng-include="\'nodes_renderer.html\'"></li></ol></div></div></div></uib-tab><uib-tab heading="\u6295\u8D44\u5468\u671F\u8868"><p>You can\'t connect the dots looking forward; you can only connect them looking backwards. So you have to trust that the dots will somehow connect in your future. You have to trust in something--your gut, destiny, life, karma, whatever. This approach has never let me down, and it has made all the difference in my life.</p><p>The reason most people never reach their goals is that they don\'t define them, or ever seriously consider them as believable or achievable. Winners can tell you where they are going, what they plan to do along the way, and who will be sharing the adventure with them.</p></uib-tab></uib-tabset></div></div></div>');
 $templateCache.put('app/pages/cost/costRuleDetail.html','<div class="row"><div class="col-md-12"><div ba-panel ba-panel-title="\u6210\u672C\u5217\u8868" ba-panel-class="with-scroll"><div ng-include="\'app/pages/cost/widgets/costRuleEditable.html\'"></div></div></div></div>');
 $templateCache.put('app/pages/cost/costRules.html','<div class="row"><div class="col-md-12"><div ba-panel ba-panel-title="\u6210\u672C\u5217\u8868" ba-panel-class="with-scroll"><div ng-include="\'app/pages/cost/widgets/costList.html\'"></div></div></div></div>');
 $templateCache.put('app/pages/dashboard/dashboard.html','<div class="widget"><div class="row"><div class="col-md-6"><div ba-panel ba-panel-title="\u9879\u76EE\u63CF\u8FF0" ba-panel-class="with-scroll"><div ng-include="\'app/pages/projectInfo/widgets/projectSummaryShow.html\'"></div><ul class="btn-list clearfix"><li><button type="button" class="btn btn-default btn-with-icon" ui-sref="projectInfo.projectInfoEdit"><i class="ion-archive"></i>\u7F16\u8F91</button></li><li><button type="button" class="btn btn-default btn-with-icon"><i class="ion-folder"></i>\u8D44\u6599\u7BA1\u7406...</button></li></ul></div></div><div class="col-md-6"><div ba-panel ba-panel-title="\u5730\u5757\u51FA\u8BA9\u7EA6\u5B9A" ba-panel-class="with-scroll"><div ng-include="\'app/pages/projectInfo/widgets/landInfoShow.html\'"></div><ul class="btn-list clearfix"><li><button type="button" class="btn btn-default btn-with-icon" ui-sref="projectInfo.landInfoEdit"><i class="ion-archive"></i>\u7F16\u8F91</button></li></ul></div></div></div><div class="row"><div class="col-md-6"><div ba-panel ba-panel-title="\u9636\u6BB5\u76F8\u5173\u7684\u5DE5\u4F5C\u5206\u9875\u6807\u7B7E" ba-panel-class="with-scroll"><h3>\u6240\u6709\u529F\u80FD\u6682\u65F6\u6309spa\u505A\uFF0C\u6027\u80FD\u7B49\u4EE5\u540E\u518D\u8C03\u6574</h3><h3>\u6837\u5F0F\u9009\u7528\u591A\u6807\u7B7E\u6837\u5F0F</h3><ul class="btn-list clearfix"><li><button type="button" class="btn btn-default btn-with-icon" ui-sref="projectInfo.projectInfoEdit"><i class="ion-archive"></i>\u7ECF\u6D4E\u6D4B\u7B97</button></li><li><button type="button" class="btn btn-default btn-with-icon"><i class="ion-folder"></i>\u672C\u9636\u6BB5\u8D44\u6599\u7BA1\u7406...</button></li></ul></div></div><div class="col-md-6"><div ba-panel ba-panel-title="\u4EBA\u4E8B\u7BA1\u7406\u3001\u7EC4\u7EC7\u67B6\u6784\u7BA1\u7406" ba-panel-class="with-scroll"><div ng-include="\'app/pages/projectInfo/widgets/landInfoShow.html\'"></div><ul class="btn-list clearfix"><li><button type="button" class="btn btn-default btn-with-icon" ui-sref="projectInfo.landInfoEdit"><i class="ion-archive"></i>\u7F16\u8F91</button></li></ul></div></div></div><div class="row"><div class="col-md-6"><div ba-panel ba-panel-title="\u9879\u76EE\u7BA1\u7406\u8FDB\u5EA6\u8BA1\u5212\u8868\u3001\u7518\u7279\u56FE\u3001shedule" ba-panel-class="with-scroll"><ul class="btn-list clearfix"><li><button type="button" class="btn btn-default btn-with-icon" ui-sref="projectInfo.projectInfoEdit"><i class="ion-archive"></i>\u7ECF\u6D4E\u6D4B\u7B97</button></li><li><button type="button" class="btn btn-default btn-with-icon"><i class="ion-folder"></i>\u672C\u9636\u6BB5\u8D44\u6599\u7BA1\u7406...</button></li></ul></div></div><div class="col-md-6"><div ba-panel ba-panel-title="\u90E8\u95E8\u8BBE\u8BA1\u3001\u8D22\u52A1\u3001\u5DE5\u7A0B\u5206\u9875\u7BA1\u7406\u5DE5\u4F5C\u5206\u6D3E\u4E0E\u6C9F\u901A" ba-panel-class="with-scroll"><div ng-include="\'app/pages/projectInfo/widgets/landInfoShow.html\'"></div><ul class="btn-list clearfix"><li><button type="button" class="btn btn-default btn-with-icon" ui-sref="projectInfo.landInfoEdit"><i class="ion-archive"></i>\u7F16\u8F91</button></li></ul></div></div></div><div class="row"><div class="col-md-6"><div ba-panel ba-panel-title="\u9879\u76EE\u7BA1\u7406\u8FDB\u5EA6\u8BA1\u5212\u8868\u3001\u7518\u7279\u56FE\u3001shedule" ba-panel-class="with-scroll"><ul class="btn-list clearfix"><li><button type="button" class="btn btn-default btn-with-icon" ui-sref="projectInfo.projectInfoEdit"><i class="ion-archive"></i>\u7ECF\u6D4E\u6D4B\u7B97</button></li><li><button type="button" class="btn btn-default btn-with-icon"><i class="ion-folder"></i>\u672C\u9636\u6BB5\u8D44\u6599\u7BA1\u7406...</button></li></ul></div></div><div class="col-md-6"><div ba-panel ba-panel-title="\u8FD0\u8425\u3001\u90E8\u95E8\u8BBE\u8BA1\u3001\u6210\u672C\u3001\u8D22\u52A1\u3001\u5DE5\u7A0B\u3001\u9500\u552E\u3001\u8FD0\u7EF4\u5206\u9875\u7BA1\u7406\u5DE5\u4F5C\u5206\u6D3E\u4E0E\u6C9F\u901A" ba-panel-class="with-scroll"><div ng-include="\'app/pages/projectInfo/widgets/landInfoShow.html\'"></div><ul class="btn-list clearfix"><li><button type="button" class="btn btn-default btn-with-icon" ui-sref="projectInfo.landInfoEdit"><i class="ion-archive"></i>\u7F16\u8F91</button></li></ul></div></div></div></div>');

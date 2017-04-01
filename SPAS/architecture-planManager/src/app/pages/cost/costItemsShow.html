@@ -1,26 +1,49 @@
 <div class="row">
     <div class="col-md-12">
-        <div ba-panel ba-panel-title="方案名称" ba-panel-class="with-scroll">
-            <uib-tabset active="$tabSetStatus.activeTab">
+        <div ba-panel ba-panel-title="成本列表" ba-panel-class="with-scroll">
+            <uib-tabset>
                 <uib-tab heading="成本计算表">
-                    <p>
-                        Take up one idea. Make that one idea your life--think of it, dream of it, live on that idea. Let the brain, muscles, nerves, every part of your body, be full of that idea, and just leave every other idea alone. This is the way to success.
-                    </p>
+                    <!-- Nested node template -->
+                    <script type="text/ng-template" id="nodes_renderer.html">
+                        <div ui-tree-handle class="tree-node tree-node-content">
+                            <a class="btn btn-success btn-xs" ng-if="node.childItems && node.childItems.length > 0" data-nodrag ng-click="toggle(this)"><span
+        class="glyphicon"
+        ng-class="{
+          'glyphicon-chevron-right': collapsed,
+          'glyphicon-chevron-down': !collapsed
+        }"></span></a> {{node.name}}
+                            <a class="pull-right btn btn-danger btn-xs" data-nodrag ng-click="remove(this)"><span
+        class="glyphicon glyphicon-remove"></span></a>
+                            <a class="pull-right btn btn-primary btn-xs" data-nodrag ng-click="newSubItem(this)" style="margin-right: 8px;"><span
+        class="glyphicon glyphicon-plus"></span></a>
+                        </div>
+                        <ol ui-tree-nodes="" ng-model="node.childItems" ng-class="{hidden: collapsed}">
+                            <li ng-repeat="node in node.childItems" ui-tree-node ng-include="'nodes_renderer.html'">
+                            </li>
+                        </ol>
+                    </script>
 
-                    <p>
-                        People who succeed have momentum. The more they succeed, the more they want to succeed, and the more they find a way to succeed. Similarly, when someone is failing, the tendency is to get on a downward spiral that can even become a self-fulfilling prophecy.
-                    </p>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h3>Basic Example</h3>
 
-                    <div class="text-center">
-                        <div class="kameleon-icon with-round-bg primary inline-icon"><img ng-src="{{::( 'Shop' | kameleonImg )}}"></div>
-                        <div class="kameleon-icon with-round-bg primary inline-icon"><img ng-src="{{::( 'Programming' | kameleonImg )}}"></div>
-                        <div class="kameleon-icon with-round-bg primary inline-icon"><img ng-src="{{::( 'Dna' | kameleonImg )}}"></div>
+                            <button ng-click="expandAll()">Expand all</button>
+                            <button ng-click="collapseAll()">Collapse all</button>
+                        </div>
                     </div>
 
-                    <p>
-                        The reason most people never reach their goals is that they don't define them, or ever seriously consider them as believable or achievable. Winners can tell you where they are going, what they plan to do along the way, and who will be sharing the adventure
-                        with them.
-                    </p>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div ui-tree id="tree-root" ng-controller="BasicExampleCtrl">
+                                <ol ui-tree-nodes ng-model="data">
+                                    <li ng-repeat="node in data.costClass" ui-tree-node ng-include="'nodes_renderer.html'"></li>
+                                </ol>
+                            </div>
+                        </div>
+
+
+                    </div>
+
 
                 </uib-tab>
                 <uib-tab heading="投资周期表">

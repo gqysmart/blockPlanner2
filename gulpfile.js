@@ -44,6 +44,6 @@ gulpFiles.filter(function(file) {
 
 
 gulp.task('default', ["clean"], function() {
-    gulp.start("build");
+    gulp.start("deploy");
 
 });

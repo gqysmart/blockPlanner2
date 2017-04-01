@@ -28,9 +28,9 @@ const PlanSchema = new Schema({
     },
     strategy: {
         cost: {
-            class: { type: Schema.Types.ObjectId, required: true },
-            calrule: { type: Schema.Types.ObjectId, required: true },
-            payrule: { type: Schema.Types.ObjectId, required: true }
+            class: { type: Schema.Types.ObjectId, },
+            calrule: { type: Schema.Types.ObjectId, },
+            payrule: { type: Schema.Types.ObjectId, }
         }
     },
     static: [Schema.Types.ObjectId] //保存计算结果用于在project中显示，避免多方案显示时，需要同时进行计算，内容只是一个结果的snap。动态比较时，不需要此项。
