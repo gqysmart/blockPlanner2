@@ -1,6 +1,6 @@
 /**/node_modules
 /typings
 /**/bower_components
-/**/.tmp
-/**/dist
-/server/app/
+/SPAS/**/.tmp
+/SPAS/**/dist
+/server/app

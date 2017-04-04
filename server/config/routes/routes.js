@@ -31,23 +31,30 @@ module.exports = function(app, passport) {
     app.get('/', auth.requiresLogin, function(req, res, next) {
         res.redirect("/home");
     });
-    app.get("/login", users.login);
+    app.get("/home/login", users.login);
     //  app.get("/signup", users.sigup);
     //  app.get('/logout', users.logout);
     app.post('/users', users.create);
     app.post('/users/session',
         pauth('local', {
-            failureRedirect: '/login',
+            failureRedirect: '/home/login',
             failureFlash: 'Invalid email or password.'
         }),
         users.actionAfterLogin);
 
-    app.get("/signup", users.signup);
+    app.get("/home/signup", users.signup);
 
     ///resources
-    app.param("app", function(res, req, next, appname) {
+    app.param("app", function(req, res, next, appname) {
 
-        next();
+        var appNames = ["plan", "home"];
+        if (-1 === appNames.indexOf(appname)) {
+            res.end("hello"); //404
+        } else {
+
+            next();
+        }
+
     });
     app.get("/:app/styles/*.css", assets.getCSS);
 
