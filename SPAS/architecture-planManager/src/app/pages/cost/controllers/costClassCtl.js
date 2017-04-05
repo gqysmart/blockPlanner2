@@ -33,8 +33,13 @@
                 $scope.$broadcast('angular-ui-tree:expand-all');
             };
 
-            costInfo.loadCostClass(function(classInfo) {
-                $scope.data = classInfo;
+            costInfo.loadCostClass(function(err, classInfo) {
+                if (err) {
+                    alert(err.cause);
+                } else {
+                    $scope.data = classInfo;
+                }
+
 
 
             });

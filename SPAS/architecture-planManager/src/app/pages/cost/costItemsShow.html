@@ -11,16 +11,27 @@
         ng-class="{
           'glyphicon-chevron-right': collapsed,
           'glyphicon-chevron-down': !collapsed
-        }"></span></a> {{node.name}}
+        }"></span></a>{{node.desc}} {{node.name}}
                             <a class="pull-right btn btn-danger btn-xs" data-nodrag ng-click="remove(this)"><span
-        class="glyphicon glyphicon-remove"></span></a>
-                            <a class="pull-right btn btn-primary btn-xs" data-nodrag ng-click="newSubItem(this)" style="margin-right: 8px;"><span
-        class="glyphicon glyphicon-plus"></span></a>
+        >{{node.value}}</span></a>
+
                         </div>
-                        <ol ui-tree-nodes="" ng-model="node.childItems" ng-class="{hidden: collapsed}">
+                        <ol ng-if="node.childItems" ui-tree-nodes="" ng-model="node.childItems" ng-class="{hidden: collapsed}">
                             <li ng-repeat="node in node.childItems" ui-tree-node ng-include="'nodes_renderer.html'">
                             </li>
                         </ol>
+                        <ol ng-if="!node.childItems ||node.childItems.length ===0" ui-tree-nodes="" ng-model="node.required" ng-class="{hidden:collapsed}">
+                            <li ng-repeat="requiredItem in node.required" ui-tree-node ng-include="'required_renderer.html'"></li>
+                        </ol>
+                    </script>
+
+                    <script type="text/ng-template" id="required_renderer.html">
+                        <div ui-tree-handle class="tree-node tree-node-content">
+                            {{requiredItem}}
+                            <a class="pull-right btn btn-danger btn-xs" data-nodrag ng-click="remove(this)"><span>required_calc_value</span></a>
+                            <a class="pull-right btn btn-primary btn-xs" data-nodrag ng-click="newSubItem(this)" style="margin-right: 8px;"><span
+        class="glyphicon glyphicon-plus"></span></a>
+                        </div>
                     </script>
 
                     <div class="row">
@@ -36,7 +47,7 @@
                         <div class="col-sm-12">
                             <div ui-tree id="tree-root" ng-controller="BasicExampleCtrl">
                                 <ol ui-tree-nodes ng-model="data">
-                                    <li ng-repeat="node in data.costClass" ui-tree-node ng-include="'nodes_renderer.html'"></li>
+                                    <li ng-repeat="node in data" ui-tree-node ng-include="'nodes_renderer.html'"></li>
                                 </ol>
                             </div>
                         </div>

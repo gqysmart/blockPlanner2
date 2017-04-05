@@ -8,6 +8,7 @@ const path = require("path");
 const conf = require("../config")
 const users = require("../../controllers/users.controller.server");
 const assets = require("../../controllers/assets.controller.server");
+const cost = require("../../controllers/cost.controller.server");
 const auth = require("../middlewares/authorization");
 const planManager = require("../../managers/plan.manager.server");
 const ObjectID = require("mongodb").ObjectID;
@@ -85,6 +86,9 @@ module.exports = function(app, passport) {
 
 
     });
+
+
+    app.get("/cost/info", cost.loadCostInfo);
 
 
 

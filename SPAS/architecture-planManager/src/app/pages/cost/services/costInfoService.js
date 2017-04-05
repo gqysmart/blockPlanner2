@@ -9,50 +9,36 @@
         .service('costInfo', costInfo);
     var planCostClassCache = {};
     var cached = false;
+    var costInfoUrl = "/cost/info";
 
     /** @ngInject */
     function costInfo($q, $http, $timeout) {
         this.loadCostClass = function(cb) {
             if (cached) {
                 if (cb) {
-                    return cb(planCostClassCache);
+                    $timeout(function() {
+                        return cb(null, planCostClassCache);
+                    }, 0);
+
                 }
 
             } else {
-                $timeout(function() {
-                    planCostClassCache = {
-                        name: "xxxx",
-                        costClass: [{
-                            name: "总成本",
-                            id: 0,
-                            childItems: [{
-                                    name: "建设成本",
-                                    id: 0,
-                                    childItems: [
-                                        { name: "土地成本", id: 0, childItems: [] },
-                                        { name: "前期成本", id: 0, childItems: [] },
-                                        { name: "建安成本", id: 0, childItems: [] },
-                                        { name: "基础设施费用", id: 0, childItems: [] },
-                                        { name: "公共设施费用", id: 0, childItems: [] },
-                                        { name: "未预见费用", id: 0, childItems: [] },
-                                        { name: "间接费", id: 0, childItems: [] },
-                                        { name: "财务利息", id: 0, childItems: [] },
-                                    ]
-                                },
-                                { name: "期间成本", id: 0, childItems: [] },
-                                { name: "期间投资不计税", id: 0, childItems: [] },
-                                { name: "开发期间税", id: 0, childItems: [] },
 
-                            ]
-                        }]
+                $http({ method: "GET", url: costInfoUrl }).then(
+                    function(response) {
+                        planCostClassCache = response.data;
+                        if (cb) {
+                            return cb(null, planCostClassCache);
+                        }
+                    },
+                    function(response) {
+                        if (cb) {
+                            var status = { error: response.status, cause: response.toString() };
+                            return cb(status, null);
+                        }
 
-                    };
-                    cached = true;
-                    if (cb) {
-                        return cb(planCostClassCache);
-                    }
+                    });
 
-                }, 5600);
 
 
             }

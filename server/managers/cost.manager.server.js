@@ -6,7 +6,7 @@
 
 const { respond } = require("../utils");
 const path = require("path");
-const { wrap: async } = require("co");
+const { wrap: async, co: co } = require("co");
 const fs = require("fs");
 const mongoose = require("mongoose");
 const assert = require("assert");
@@ -14,9 +14,13 @@ const ObjectID = require("mongoDB").ObjectID;
 
 const MongoClient = require("mongoDB").MongoClient;
 const GCDBConnString = "mongodb://127.0.0.1:27017/test";
+
 const version = "v1"
 const costClassesRelation = "architecture.costClasses" + version;
+const termCollection = "architecture.terminology" + version;
+
 const CostClassRelation = mongoose.model("CostClassRelation");
+
 const CostClass = mongoose.model("CostClass");
 const InitConfig = mongoose.model("InitConfig");
 
@@ -56,9 +60,6 @@ costManager.createCostClass = async(function*(cb) {
             yield CostClassRelation.insertMany(originalClassRelation);
             yield InitConfig.insertMany([aConfig1, aConfig2]);
 
-
-
-
         } else {
             var originalClassCfg = yield InitConfig.findOne({ name: "originalClassTag", category: "costClass" });
             originalCostClass.thisTag = originalClassCfg.value;
@@ -93,3 +94,87 @@ costManager.copyCostClass = async(function*(sourceClass, cb) { //默认克隆所
 
 
 });
+
+costManager.loadCostClass = function(planId, cb) {
+    CostClass.rootClass(planId, function(err, rootClass) {
+        co(getItemsDesc(rootClass)).then(function(rootClassDesc) {
+
+            cb(rootClassDesc);
+
+        });
+
+
+
+    });
+
+
+
+
+};
+
+
+
+function* getItemsDesc(rootClass, cb) {
+    var systemDB = yield MongoClient.connect(GCDBConnString);
+    var promise = null;
+
+    var getChildItemsDesc = async(function*(classArray) {
+        for (let i = 0; i < classArray.length; i++) {
+            var item = classArray[i];
+            var desc = yield systemDB.collection(termCollection).findOne({ _id: item.name }, { "name.cn": 1 });
+            item.desc = desc.name.cn;
+            item.seq = i;
+            if (item.childItems && item.childItems.length > 0) {
+                yield getChildItemsDesc(item.childItems);
+            }
+
+        }
+
+    });
+
+    if (cb) {
+        try {
+            yield getChildItemsDesc(rootClass);
+
+        } catch (e) {
+
+        } finally {
+            systemDB.close();
+        }
+
+        return cb(rootClass);
+
+    } else {
+        try {
+            yield getChildItemsDesc(rootClass);
+
+        } catch (e) {
+
+        } finally {
+            systemDB.close();
+        }
+        return rootClass;
+
+    }
+
+
+
+}
+
+// function* calcAndFormatCostClass(nameId) {
+
+//     // //根据项目的版本号，nameid查询名称可读信息，暂时以v1使用,系统数据库默认在test中。
+//     // var systemDb = MongoClient.connect(testConnString,)
+//     // var result = {
+//     //     name: { id: "xxx", desc: "xxx", parentId: "ddd" },
+//     //     value: { rule: "xxxx", current: 2000 },
+//     //     index: "1.1.1",
+//     //     children: [],
+//     //     required: []
+//     // };
+
+
+
+
+
+// };
