@@ -161,20 +161,27 @@ function* getItemsDesc(rootClass, cb) {
 
 }
 
-// function* calcAndFormatCostClass(nameId) {
+function calcByRule(item) {
 
-//     // //根据项目的版本号，nameid查询名称可读信息，暂时以v1使用,系统数据库默认在test中。
-//     // var systemDb = MongoClient.connect(testConnString,)
-//     // var result = {
-//     //     name: { id: "xxx", desc: "xxx", parentId: "ddd" },
-//     //     value: { rule: "xxxx", current: 2000 },
-//     //     index: "1.1.1",
-//     //     children: [],
-//     //     required: []
-//     // };
+
+}
 
 
 
+function* calcChildItems(childItems) {
+
+    // //根据项目的版本号，nameid查询名称可读信息，暂时以v1使用,系统数据库默认在test中。
+    // var systemDb = MongoClient.connect(testConnString,)
+    // var result = {
+    //     name: { id: "xxx", desc: "xxx", parentId: "ddd" },
+    //     value: { rule: "xxxx", current: 2000 },
+    //     index: "1.1.1",
+    //     children: [],
+    //     required: []
+    // };
+    for (let i = 0; i < childItems.length; i++) {
+
+    }
 
 
-// };
+};

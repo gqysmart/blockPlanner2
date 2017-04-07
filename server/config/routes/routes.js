@@ -11,8 +11,9 @@ const assets = require("../../controllers/assets.controller.server");
 const cost = require("../../controllers/cost.controller.server");
 const auth = require("../middlewares/authorization");
 const planManager = require("../../managers/plan.manager.server");
-const ObjectID = require("mongodb").ObjectID;
+const calcRuleManager = require("../../managers/calcRule.manager.server");
 
+const ObjectID = require("mongodb").ObjectID;
 
 const appTitle = conf.appTitle;
 const fail = {

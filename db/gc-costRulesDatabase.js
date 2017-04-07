@@ -83,8 +83,8 @@ co(function*() {
                 classNameID: classNameID,
 
                 compute: {
-                    rule: rule.computeRule.oper,
-                    desc: rule.computeRule.desc,
+                    desc: rule.computeRule.oper,
+                    markdown: rule.computeRule.markdown,
                     deps: yield parseDependenceList(db, rule.computeRule.base)
                 }
 
@@ -118,8 +118,6 @@ function* parseDependenceList(db, originList) {
         i++
     }
     return result;
-
-
 }
 
 function* qualifiedName2TermID(db, qName) {
@@ -147,7 +145,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
-            desc: {
+            markdown: {
                 cn: "由子级自动计算"
             }
         }
@@ -158,7 +156,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0", //(WS@http://goodcity.net/{{1}}/{{2}}=$0)
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -167,7 +165,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0", //#
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -177,7 +175,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
 
@@ -189,7 +187,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -201,7 +199,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -211,7 +209,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -221,7 +219,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -231,7 +229,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -241,7 +239,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -251,7 +249,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -261,7 +259,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -271,7 +269,7 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "AS=$0",
-            desc: {
+            markdown: {
                 cn: "由子级计算"
             }
         }
@@ -282,12 +280,10 @@ var costCalRuleList = [{
         computeRule: {
             base: [],
             oper: "#",
-            desc: {
+            markdown: {
                 cn: "无缺省值直接数"
             }
         }
     },
-
-
 
 ];
