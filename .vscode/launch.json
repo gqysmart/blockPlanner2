@@ -18,6 +18,12 @@
         },
         {
             "type": "node",
+            "request": "attach",
+            "name": "append2child",
+            "port": 5859
+        },
+        {
+            "type": "node",
             "request": "launch",
             "name": "debug gulp",
             "program": "${workspaceRoot}/node_modules/gulp/bin/gulp.js",
@@ -36,7 +42,13 @@
             "name": "mongodb",
             "program": "${workspaceRoot}/db/costRulesDatabase.js",
             "cwd": "${workspaceRoot}"
-        }
+        }, {
+            "type": "node",
+            "request": "launch",
+            "name": "cluster",
+            "program": "${workspaceRoot}/server/cluster.js",
+            "cwd": "${workspaceRoot}"
+        },
 
 
 

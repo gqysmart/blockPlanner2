@@ -33,6 +33,6 @@ projectManager.createProject = async(function*(owner, projectInfo, cb) {
     // newProject.security.config = projectInfo.security.config;
 
     var doc = yield newProject.save();
-    return cb(doc.toObject());
+    return cb(doc);
 
 });

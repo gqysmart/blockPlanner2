@@ -71,7 +71,7 @@ costManager.createCostClass = async(function*(cb) {
     }
 
     var costClass = copyCostClass(originalCostClass);
-    return cb(costClass.toObject());
+    return cb(costClass);
 
 
 }); //新建成本层级关系管理
@@ -90,7 +90,7 @@ costManager.copyCostClass = async(function*(sourceClass, cb) { //默认克隆所
     yield CostClassRelation.insertMany(sourceClassRelations);
     var costClassDoc = yield costClass.save();
 
-    return cb(costClass.toObject());
+    return cb(costClass);
 
 
 });

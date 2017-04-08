@@ -14,7 +14,6 @@ const config = require("./config/config");
 const models = join(__dirname, "models");
 const port = process.env.PORT || 3200;
 const app = express();
-
 /** expose */
 module.exports = app;
 //

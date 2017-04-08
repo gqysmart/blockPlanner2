@@ -15,6 +15,7 @@ const mongoStore = require("connect-mongo")(session);
 const flash = require("connect-flash");
 const winston = require("winston");
 const helpers = require("view-helpers");
+const path = require("path");
 
 const conf = require("./config");
 const env = process.env.NODE_ENV || "development";
@@ -39,7 +40,7 @@ module.exports = function(app, passport) {
     //add middleware here!
     //static resourse
     // app.use(serveFavicon("server/app/assets/favicon.ico"));
-    app.use(serveStatic("server/app/public", {}));
+    app.use(serveStatic(path.join(__dirname, "..", "/app/public"), {}));
 
     //log:use winston on production
     let log = "dev";
@@ -103,7 +104,7 @@ module.exports = function(app, passport) {
 
     // app.engine("html", require('ejs').renderFile);
     app.set("view engine", "ejs");
-    app.set("views", "server/app/assets/");
+    app.set("views", path.join(__dirname, "..", "/app/assets/"));
 
     //
     return app;

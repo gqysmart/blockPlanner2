@@ -76,9 +76,10 @@ module.exports = function(app, passport) {
     app.get("/:app", function(req, res, next) {
         //test plan
         var app = req.params.app;
+        res.render(app + "/views/index");
         planManager.createPlan(new ObjectID(), function(plan) {
 
-            res.render(app + "/views/index");
+
 
         })
 

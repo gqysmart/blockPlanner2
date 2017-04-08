@@ -17,10 +17,10 @@ const fs = require("fs");
 const mongoose = require("mongoose");
 const ObjectID = require("mongoDB").ObjectID;
 const PDCItem = mongoose.model("PDCItem");
-const PDC = mongoose.model("PDC");
-const CalcRule = mongoose.model("CalcRule");
+const Accessor = mongoose.model("Accessor");
 const calcRuleManger = require("./calcRule.manager.server");
 const _ = require("lodash");
+const dbManager = require("./db.manager.server");
 
 
 
@@ -29,7 +29,9 @@ module.exports.createPDC = async(function*(cb) {
     var newPDC = new PDC();
     newPDC.thisTag = new ObjectID();
     var pdc = yield newPDC.save();
-    if (cb) { cb(null, pdc.toObject()) };
+    if (cb) {
+        cb(null, pdc);
+    };
 
 });
 
@@ -54,89 +56,45 @@ function* applyRecalc(pdcID, name, cb) {
 
     }
     if (cb) {
-        cb(null, pdcItem.toObject());
+        cb(null, pdcItem);
     }
 };
 module.exports.applyRecalc = async(applyRecalc);
 
 //重新计算时，最终肯定是收敛的。其他修改只是申请修改，但并不执行重新计算。为了防止无限循环，应该有几种机制让它能停下来，譬如循坏次数，时间，强制听下来。
 //如果计算期间，修改了规则怎么处理？因为冲计算时间可能比较长，这期间发生修改的可能性是很大的。因此做如下修改：默认重计算次数改为10次；pdc控制字段添加recusive：{style:["times，during"] value：}
-function* getData(criteria) { //criteria 应该包含planID的，根据planID才能查到pdcID，calcID等。 暂时以这个单元测试。系统整合时再调整。
-    var pdcID = criteria.pdcID;
-    var name = criteria.name;
-    var pdc = yield PDC.findOne({ _id, pdcID });
-    var pdcItem = yield PDCItem.findOne({ "tracer.ownerTag": pdc.thisTag, name: name });
-    if (!pdcItem) {
 
-        pdcItem = yield calcAndPublish(criteria);
-        if (!pdcItem) {
-            return null;
-        }
+
+function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName) {
+
+    var pdcAccessor = yield Accessor.findOne({ thisTag, pdcAccessorTag });
+    if (!pdcAccessor) {
+        var err = { no: -1, desc: `pdcAccessor=${pdcAccessorTag} doesn't exist.` }
+        throw (err);
     }
-    return pdcItem.value;
-};
-module.exports.getData = async(getData);
 
-
-function* calcAndPublish(criteria) {
-    var pdcID = criteria.pdcID;
-    var name = criteria.name;
-    //
-    var pdc = yield PDC.findOne({ _id, pdcID });
-    var pdcItem = null;
-    //
-    var calcRuleID = options.calcRuleID;
-    var ruleDesc = yield calcRuleManger.getCalcRuleDescriptor(calcRuleID, name);
+    var ruleDesc = yield calcRuleManger.getCalcRuleDescriptor(calcRuleAccessorTag, calcRuleName);
     if (!ruleDesc) {
-        var err = { no: -1, desc: `no define ${name} calcruledescritor.` };
-        return null;
+        var err = { no: -1, desc: `calcRuleName=${calcRuleName} doesn't exist.` }
+        throw (err);
     }
-    var bases = ruleDesc.rule.base;
+
+    var bases = ruleDesc.rule.bases;
     var baseValues = [];
     if (bases && bases.length > 0) { //pdc locked?  //是否考虑添加重入锁，否则这里要考虑释放lock
         //先处理依赖项
 
         for (let i = 0; i < bases.length; i++) {
-            var crit = { pdcID: pdcID, name: bases[i], calcRuleID: calcRuleID };
-            var value = yield getData(crit);
+            var value = yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, bases[i]);
             if (!value) {
-                return null;
+                var err = { no: -1, desc: `calcRuleName=${base[i]} doesn't exist.` };
+                throw (err);
             }
             baseValues.push(value);
         }
     }
-
-
     //解析规则
-    var parseResult = yield co(parseCalcRule(ruleDesc.rule.desc));
-    if (parse.err) {
-        return null;
-    }
-
-    //再次查询是否加锁
-    //生成占用锁tag
-    var operOptions = {
-        cb: async(function*() {
-            var _pdcItem = yield PDCItem.findOne({ name: name });
-            if (_pdcItem) {
-                pdcItem = _pdcItem;
-                return;
-            } else {
-                pdcItem = new PDCItem();
-                pdcItem.name = name;
-                pdcItem.value = parseResult.value;
-                pdcItem.tracer.ownerTag = pdc.thisTag;
-                yield pdcItem.save(); //这里应该要查找一下是不是在创建时，已经有其他的任务已经添加了该item的计算item
-                retrun;
-            }
-        })
-    };
-    var success = yield co(holdLockAndOper(PDC, pdcID, operOptions));
-
-    if (success) { return pdcItem; } else { return null; }
-}
-
-function* parseCalcRule(ruleDesc) {
+    function* parseCalcRule(ruleDesc) {
         //解析规则
         var rOpers = /(.*)=(.*)/.exec(ruleDesc);
         var value = 0;
@@ -154,57 +112,33 @@ function* parseCalcRule(ruleDesc) {
                 break;
         }
         return { err: null, value: value };
+    };
+    var parseResult = yield parseCalcRule(ruleDesc.rule.desc);
+    if (!parseResult) {
+        var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} parse value=null ` };
+        throw (err);
     }
-    //editCtl 是指类似calcRule，pdc，的文档id，通过他们才能去写pdcitem，calcruledescriptor。
-    //具有通用性，作为通用修改锁，不是线程的，是用hostTag来实现锁，因此多线程，多进程，多并发都是可以用的。
-var defaultHoldOptions = {
-    maxLagTime: 1000 //一秒
-};
 
-function* holdLockAndOper(model, editCtlId, operOptions) { //调整到db.manager作为通用锁访问，相应的组件有access{}；schema支持继承么？
-        function pause(time) {
-            var promise = new Promise(function(resolve, reject) {
-                setTimeout(function() { resolve() }, time);
-            })
-        };
-        if (!operOptions) { operOptions = {}; };
-        operOptions = _.defaults(operOptions, defaultHoldOptions);
-        if (!operOptions._startTime) { operOptions._startTime = new Date() };
-        //
-        var myAccessTag = new ObjectID();
-        var ctl = yield model.findOne({ _id, editCtlId }); //为了真正实现线程锁，还需要添加占用锁定的ID，可用objectID。
-        if (!ctl.access.hostTag) {
-            ctl.access.hostTag = myAccessTag;
-            yield pdc.save();
-            //重新查找一次，确认目前是自己占用了锁。
-            ctl = yield PDC.findOne({ _id, pdcID });
-            if (ctl.access.hostTag !== myAccessTag) {
-                var now = new Date();
-                if (now.getTime() - operOptions._startTime.getTime() > operOptions.maxLagTime) { return false } //操作失败。
-                else { //尝试随机时间后，再尝试修改
-                    operOptions._startTime = new Date();
-                    var randomPauseTime = Math.random() * 500; //0.5秒以内，重新尝试一次。
-                    yield pause(randomPauseTime);
-                    yield co(holdLockAndOper(model, editCtlId, operOptions));
-                }
-
-            } else { //hold
-                try {
-                    if (operOptions.cb) {
-                        cb();
-                    }
-
-                } catch (e) {
-
-                } finally {
-                    //释放lock
-                    ctl.access.hostTag = null;
-                    yield ctl.save();
-
-                }
-
-
+    //再次查询是否加锁
+    //生成占用锁tag
+    var _pdcItem = null;
+    var oper = async(function*() {
+        _pdcItem = yield PDCItem.findOne({ name: calcRuleName, "tracer.ownerTag": pdcAccessorTag });
+        if (_pdcItem) { //是不是占用前已经被添加过了，如果已经有了该项，只是修改value值
+            if (Math.abs(_pdcItem.value - parseResult) > 0.0001) { //精度0.0001
+                _pdcItem.value = parseResult;
+                _pdcItem.applyRecalc = true;
+                yield _pdcItem.save();
             }
-
-            return true;
+        } else {
+            _pdcItem = new PDCItem();
+            _pdcItem.name = calcRuleName;
+            _pdcItem.value = parseResult.value;
+            _pdcItem.tracer.ownerTag = pdcAccessorTag;
+            yield _pdcItem.save(); //这里应该要查找一下是不是在创建时，已经有其他的任务已经添加了该item的计算item
         }
+    });
+    var success = yield dbManager.holdLockAndOper(pdcAccessor, oper);
+
+    if (success == true) { return _pdcItem.value; } else { return null; }
+}

@@ -5,37 +5,39 @@
  */
 const MongoClient = require("mongoDB").MongoClient;
 const assert = require("assert");
+const ObjectID = require("mongoDB").ObjectID;
 const co = require("co");
 const GCDBConnString = "mongodb://localhost:27017/goodcity";
 const testConnString = "mongodb://localhost:27017/test";
-const version = "v1"
+const version = "";
 const termCollection = "architecture.terminology" + version;
 const rootTermID = 0;
 const gcTermID = 1;
 var termID = gcTermID;
 
 
-var termGC = {
-    //   _id: gcTermID,
-    name: { en: "goodcity", cn: "江苏嘉城" },
-    desc: "WS@http://goodcity.net/companyInfo"
+// var termGC = {
+//     //   _id: gcTermID,
+
+//     name: { en: "goodcity", cn: "江苏嘉城" },
+//     desc: "WS@http://goodcity.net/companyInfo"
+// }
+
+function getNameNo(name) {
+    return new ObjectID();
 }
 
-MongoClient.connect(GCDBConnString, function(err, db) {
-    assert.equal(null, err);
+var termGC = {
+    name: getNameNo("goodcity"),
+    desc: { en: "goodcity", cn: "江苏嘉城" },
+    link: "http://goodcity.net/companyInfo",
+    alias: []
+};
 
-    db.close();
-
-
-
-
-});
 
 co(function*() {
     var db = yield MongoClient.connect(testConnString);
     try {
-
-
         console.log("connect test successfully.");
         //  yield db.collection(termCollection).creatIndex({ "name.en": 1, _id: 1, parentID: 1 }, { unique: true });
         yield db.collection(termCollection).insertOne(termGC);
@@ -50,9 +52,14 @@ co(function*() {
             var childTermList = mainRel.list;
             var j = 0;
             while (j < childTermList.length) {
-                var childTermObject = childTermList[j];
-                //   childTermObject._id = createTermID();
-                childTermObject.parentID = parentID;
+                var childTermObject = {
+                    name: getNameNo(parentName + "." + childTermList[j].name.en),
+                    parentName: parentID,
+                    desc: childTermList[j].name,
+                    link: childTermList[j].link,
+                    alias: childTermList[j].alias
+                }
+
                 yield db.collection(termCollection).insertOne(childTermObject);
                 j++;
             }
@@ -73,10 +80,10 @@ function* qulifiedName2TermID(db, qName) {
     var termObject;
     while (i < nameList.length) {
         name = nameList[i];
-        termObject = yield db.collection(termCollection).findOne({ parentID: resultTermID, "name.en": name });
+        termObject = yield db.collection(termCollection).findOne({ parentName: resultTermID, "desc.en": name });
         // termObject = yield { _id, 100 };
 
-        resultTermID = termObject._id;
+        resultTermID = termObject.name;
         i++;
 
     }

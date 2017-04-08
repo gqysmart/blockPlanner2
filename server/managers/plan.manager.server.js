@@ -36,6 +36,6 @@ planManager.createPlan = async(function*(owner, planInfo, cb) {
     // newplan.security.config = planInfo.security.config;
 
     var doc = yield newplan.save();
-    return cb(doc.toObject());
+    return cb(doc);
 
 });

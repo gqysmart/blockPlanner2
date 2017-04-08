@@ -1,3 +1,5 @@
+var sysConfig = require("./sys");
+
 module.exports = {
     debug: true,
     port: 3200,
@@ -9,7 +11,5 @@ module.exports = {
     sessionSecret: "hello,this world is  so good!",
 
     //db
-    dbUrl: "mongodb://localhost/bd"
-
-
+    dbUrl: sysConfig.appdb.connectString
 };
