@@ -55,6 +55,7 @@ module.exports.initTerminologyAccessor = initTerminologyAccessor;
 
 function initAccessor(accessor) {
     accessor.thisTag = getUniqTag();
+    accessor.timemark.lastModifed = Date.now();
 }
 
 function initLogAccessor(accessor) {
@@ -73,7 +74,6 @@ function initTerminologyAccessor(accessor) {
 
 
 
-
 const defaultHoldOptions = {
     maxLagTime: 1000 //一秒
 };
@@ -88,6 +88,30 @@ const defaultHoldOptions = {
 function createAccessorToken() {
     return new ObjectID();
 }
+/**
+ * is protoAccessorTag in proto chainof accessorTag
+ * @param {*} protoAccessorTag 
+ * @param {*} accessorTag 
+ */
+function* isProtoOf(protoAccessorTag, accessorTag) {
+
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag });
+    if (!accessor) {
+        return false;
+    }
+    if (!accessor.proto.forward) {
+        return false;
+    } else {
+        if (accessor.proto.forward === protoAccessorTag) {
+            return true;
+        }
+        var forwardAccessor = yield Accessor.findOne({ thisTag: accessor.proto.forward });
+        return yield isProtoOf(protoAccessorTag, forwardAccessor.thisTag);
+
+    }
+
+}
+module.exports.isProtoOf = async(isProtoOf);
 
 function* holdLockAndOper(targetAccessor, oper, operOptions) { //调整到db.manager作为通用锁访问，相应的组件有access{}；schema支持继承么？
     var accessor = yield Accessor.findOne({ _thisTag: targetAccessor });

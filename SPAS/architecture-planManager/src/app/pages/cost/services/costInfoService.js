@@ -9,7 +9,7 @@
         .service('costInfo', costInfo);
     var planCostClassCache = {};
     var cached = false;
-    var costInfoUrl = "/cost/info";
+    var costInfoUrl = "/plan/cost/info";
 
     /** @ngInject */
     function costInfo($q, $http, $timeout) {

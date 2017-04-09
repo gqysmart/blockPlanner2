@@ -90,7 +90,7 @@ module.exports = function(app, passport) {
     });
 
 
-    app.get("/cost/info", cost.loadCostInfo);
+    app.get("/plan/cost/info", cost.loadCostInfo);
 
 
 

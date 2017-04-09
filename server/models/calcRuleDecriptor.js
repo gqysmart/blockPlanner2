@@ -28,6 +28,7 @@ const CalcRuleDescriptorSchema = new Schema({
         markdown: { en: String, cn: String } //出文本用
     },
     tracer: {
+        updatedTime: { type: Date, default: Date.now }, //创建和修改后的时间。
         ownerTag: { type: Schema.Types.ObjectId, required: true } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
     }
 });

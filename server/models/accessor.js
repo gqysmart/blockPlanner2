@@ -13,8 +13,8 @@ const Schema = mongoose.Schema;
 const accessorSchema = new Schema({
     thisTag: { type: Schema.Types.ObjectId }, //default: 
     proto: {
-        forward: { type: Schema.Types.ObjectId }, //1..n
-        association: { type: Schema.Types.ObjectId } //关联对象，查找时先找自身，如果自身没有，要先去关联对象查找修改。
+        forward: { type: Schema.Types.ObjectId }, //1..n，原型链是无穷长的，关联对象的深度是1
+        //     association: { type: Schema.Types.ObjectId } //关联对象，查找时先找自身，如果自身没有，要先去关联对象查找修改。关联对象的意义好像不大,而且增加了很多的复杂性，还是取消。
     },
     concurrent: { //可以控制并行操作。
         token: { type: Schema.Types.ObjectId } //保存口令创建时间，必要时根据时间可以强行删除口令
@@ -29,6 +29,10 @@ const accessorSchema = new Schema({
     },
     log: {
         accessor: { type: Schema.Types.ObjectId }
+    },
+    timemark: {
+        lastModified: { type: Date }, //新建或者如果规则发生了变化，修改此时间
+        forwardUpdated: { type: Date }, //新建或者修改forward链之后，需要修改此事件，如果小于原型的lastmodifiedtime，说明原型的规则发生了变化，重新计算后，修改为目前时间。
     },
     special: {}
 
