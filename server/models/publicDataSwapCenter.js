@@ -35,7 +35,7 @@ const PDCItemSchema = new Schema({
 
 
 //create query index
-
+PDCItemSchema.index({ "tracer.ownerTag": 1, name: 1, applyRecalc: 1, value: 1 });
 
 mongoose.model('PDCItem', PDCItemSchema);
 

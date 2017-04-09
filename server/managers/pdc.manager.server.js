@@ -24,49 +24,18 @@ const dbManager = require("./db.manager.server");
 
 
 
-module.exports.createPDC = async(function*(cb) {
-    //pdc 职能通过plan访问。因此没有owner字段。
-    var newPDC = new PDC();
-    newPDC.thisTag = new ObjectID();
-    var pdc = yield newPDC.save();
-    if (cb) {
-        cb(null, pdc);
-    };
 
-});
-
-function* applyRecalc(pdcID, name, cb) {
-    var pdc = yield PDC.findOne({ _id, pdcID });
-    var pdcItem = null;
-    if (pdc.access.locked === true) {
-        //不进行修改，返回报错信息，提示强行停止或者放弃修改
-    } else {
-        try {
-            pdc.access.locked = true;
-            yield pdc.save();
-            //oper
-            pdcItem = yield PDCItem.findOneAndUpdate({ "tracer.ownerTag": pdc.thisTag, name: name }, { applyRecalc: true });
-
-        } catch (e) {
-
-        } finally {
-            pdc.access.locked = false;
-            yield pdc.save();
-        }
-
-    }
-    if (cb) {
-        cb(null, pdcItem);
-    }
-};
-module.exports.applyRecalc = async(applyRecalc);
 
 //重新计算时，最终肯定是收敛的。其他修改只是申请修改，但并不执行重新计算。为了防止无限循环，应该有几种机制让它能停下来，譬如循坏次数，时间，强制听下来。
 //如果计算期间，修改了规则怎么处理？因为冲计算时间可能比较长，这期间发生修改的可能性是很大的。因此做如下修改：默认重计算次数改为10次；pdc控制字段添加recusive：{style:["times，during"] value：}
+const defaultCalcAndPublishOptions = {
+    reCalcNums: 32 //如果有迭代计算，默认为32次。
+}
 
-
-function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName) {
-
+function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, options) {
+    if (!options) { options = {} };
+    _.defaults(options, defaultCalcAndPublishOptions);
+    //
     var pdcAccessor = yield Accessor.findOne({ thisTag, pdcAccessorTag });
     if (!pdcAccessor) {
         var err = { no: -1, desc: `pdcAccessor=${pdcAccessorTag} doesn't exist.` }
@@ -93,6 +62,37 @@ function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName) {
             baseValues.push(value);
         }
     }
+
+    function* applyRecalc(pdcAccessorTag, calcRuleAccessorTag, options) {
+        if (!options) { options = {} };
+        if (!options._reCalcTimes) { options._reCalcTimes = 0; }
+
+        var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag });
+        var calcRuleAccessor = yield Accessor.findOne({ thisTag: calcRuleAccessorTag });
+
+        var appliedPDCItems = yield PDCItem.find({ "tracer.ownerTag": pdcAccessor.thisTag, applyRecalc: true }).toArray();
+        if (appliedPDCItems.length === 0) { return true; }
+        var appliedNames = [];
+        for (let i = 0; i < appliedPDCItems.length; i++) {
+            appliedNames.push(appliedPDCItems[i].name);
+        }
+        for (let i = 0; i < appliedPDCItems; i++) {
+            let item = appliedPDCItems[i];
+            var depsItems = yield getCalcRuleDescriptor.find({ "tracer.ownerTag": calcRuleAccessor.thisTag, name: { $in: appliedNames }, "rule.base": item.name }).toArray();
+            for (let j = 0; j < depsItems.length; j++) {
+                let depItem = depsItems[i];
+                yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, options)
+            }
+            item.applyRecalc = false;
+            yield item.save();
+        }
+
+        if (++options._reCalcTimes > options.reCalcNums) { return true; } else {
+            return yield applyRecalc(pdcAccessorTag, calcRuleAccessorTag, options);
+        }
+
+
+    };
     //解析规则
     function* parseCalcRule(ruleDesc) {
         //解析规则
@@ -122,13 +122,14 @@ function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName) {
     //再次查询是否加锁
     //生成占用锁tag
     var _pdcItem = null;
-    var oper = async(function*() {
+    var oper = async(function*(options) {
         _pdcItem = yield PDCItem.findOne({ name: calcRuleName, "tracer.ownerTag": pdcAccessorTag });
         if (_pdcItem) { //是不是占用前已经被添加过了，如果已经有了该项，只是修改value值
             if (Math.abs(_pdcItem.value - parseResult) > 0.0001) { //精度0.0001
                 _pdcItem.value = parseResult;
-                _pdcItem.applyRecalc = true;
+                _pdcItem.applyRecalc = true; //依赖项是现在重新计算？还是提示手动，应该还是修改lastmodifed time，让后续模块自行判断。
                 yield _pdcItem.save();
+                yield applyRecalc(pdcAccessorTag, calcRuleAccessorTag, options)
             }
         } else {
             _pdcItem = new PDCItem();
@@ -138,7 +139,7 @@ function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName) {
             yield _pdcItem.save(); //这里应该要查找一下是不是在创建时，已经有其他的任务已经添加了该item的计算item
         }
     });
-    var success = yield dbManager.holdLockAndOper(pdcAccessor, oper);
+    var success = yield dbManager.holdLockAndOper(pdcAccessor, oper, options);
 
     if (success == true) { return _pdcItem.value; } else { return null; }
 }

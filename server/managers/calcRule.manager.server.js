@@ -29,7 +29,6 @@ const defaultCreateOptions = {
 };
 
 
-function* changeSource() {};
 
 function* modifyCalcRule(ruleAccessorTag, ruleInfo) { //complicated.
     function isRuleChanged(ruleA, ruleB) {
