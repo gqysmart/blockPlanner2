@@ -5,9 +5,16 @@
  */
 
 const { respond } = require("../utils");
+const { wrap: async, co: co } = require("co");
+
 const path = require("path");
 const fs = require("fs");
-const costManager = require("../managers/cost.manager.server");
+const mongoose = require("mongoose");
+const sysConfig = require("../config/sys");
+const costMgr = require("../managers/cost.manager.server");
+const terminologyMgr = require("../managers/terminology.manager.server");
+const dbMgr = require("../managers/db.manager.server");
+const InitConfig = mongoose.model("InitConfig");
 
 module.exports.loadCostInfo = function(req, res, next) {
 
@@ -42,14 +49,19 @@ module.exports.loadCostInfo = function(req, res, next) {
     //     }]
 
     // };
-    costManager.loadCostClass(0, function(classData) {
+    co(function*() {
 
-        res.json(classData);
+        var rootRuleName = "江苏嘉城/成本/项目总成本";
+        var terminologyAccessorTagCfg = yield InitConfig.findOne(dbMgr.terminologyAccessorTagCfgCriteria);
+        var tranferOptions = {
+            lan: "cn",
+            delimiter: "/"
+        };
+        var nameTag = yield terminologyMgr.qulifiedName2TerminologyTag(rootRuleName, terminologyAccessorTagCfg.value, tranferOptions);
+        res.end(nameTag.toString());
+
+
     })
-
-
-
-
 
 
 }

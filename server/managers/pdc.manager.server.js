@@ -33,7 +33,7 @@ const defaultCalcAndPublishOptions = {
 }
 
 function* getCalcRuleValueFromPDC(pdcAccessorTag, calcRuleAccessorTag, calcRuleName) {
-    var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag });
+    var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag, version: sysConfig.version });
     var pdcItem = yield PDCItem.findOne({ "tracer.ownerTag": pdcAccessor, name: calcRuleName });
     if (!pdcItem) {
         return yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName);
@@ -49,7 +49,7 @@ function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, opti
     if (!options) { options = {} };
     _.defaults(options, defaultCalcAndPublishOptions);
     //
-    var pdcAccessor = yield Accessor.findOne({ thisTag, pdcAccessorTag });
+    var pdcAccessor = yield Accessor.findOne({ thisTag, pdcAccessorTag, version: sysConfig.version });
     if (!pdcAccessor) {
         var err = { no: -1, desc: `pdcAccessor=${pdcAccessorTag} doesn't exist.` }
         throw (err);
@@ -80,8 +80,8 @@ function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, opti
         if (!options) { options = {} };
         if (!options._reCalcTimes) { options._reCalcTimes = 0; }
 
-        var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag });
-        var calcRuleAccessor = yield Accessor.findOne({ thisTag: calcRuleAccessorTag });
+        var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag, version: sysConfig.version });
+        var calcRuleAccessor = yield Accessor.findOne({ thisTag: calcRuleAccessorTag, version: sysConfig.version });
 
         var appliedPDCItems = yield PDCItem.find({ "tracer.ownerTag": pdcAccessor.thisTag, applyRecalc: true }).toArray();
         if (appliedPDCItems.length === 0) { return true; }

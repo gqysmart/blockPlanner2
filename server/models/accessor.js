@@ -34,6 +34,7 @@ const accessorSchema = new Schema({
         lastModified: { type: Date }, //新建或者如果规则发生了变化，修改此时间
         forwardUpdated: { type: Date }, //新建或者修改forward链之后，需要修改此事件，如果小于原型的lastmodifiedtime，说明原型的规则发生了变化，重新计算后，修改为目前时间。
     },
+    version: { type: String, default: sysConfig.version },
     special: {}
 
 });

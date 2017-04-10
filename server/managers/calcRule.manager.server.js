@@ -45,7 +45,7 @@ function* modifyCalcRule(ruleAccessorTag, ruleInfo) { //complicated.
     //判断值是不是一样，不一样，就添加一个owner为自己的descriptor。
     //1. 
     var ruleName = ruleInfo.name;
-    var ruleAccessor = yield Accessor.findOne({ thisTag: ruleAccessorTag });
+    var ruleAccessor = yield Accessor.findOne({ thisTag: ruleAccessorTag, version: sysConfig.version });
     var existedRuleDes = yield getCalcRuleDescriptor(ruleAccessorTag, ruleName);
     if (!existedRuleDes) {
         var err = { no: -1, desc: `modifyCalcRule:ruleAccessorTag=${ruleAccessorTag},ruleName=${ruleName} doesn't exist.` }
@@ -94,7 +94,7 @@ function* modifyCalcRuleProto(protoAccessorTag, accessorTag, options) {
     if (inChain) {
         return false;
     }
-    var accessor = yield Accessor.findOne({ thisTag, accessorTag });
+    var accessor = yield Accessor.findOne({ thisTag, accessorTag, version: sysConfig.version });
     if (options.discard) //抛弃掉以前在原proto时时的修改。
     {
         yield CalcRuleDescriptor.remove({ "tracer.ownerTag": accessorTag });
@@ -112,12 +112,12 @@ function* modifyCalcRuleProto(protoAccessorTag, accessorTag, options) {
 }
 
 function* isProtoRuleUpdated(accessorTag) {
-    var accessor = yield Accessor.findOne({ thisTag: accessorTag });
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version });
     if (!accessor) {
         var err = { no: -1, desc: `accessorTag=${accessorTag} doen't exist.` };
         throw (err);
     }
-    var forwardAccessor = yield Accessor.findOne({ thisTag: accessor.proto.forward });
+    var forwardAccessor = yield Accessor.findOne({ thisTag: accessor.proto.forward, version: sysConfig.version });
 
     if (forwardAccessor.timemark.forward > accessor.timemark.forward || forwardAccessor.timemark.lastModifed > accessor.timemark.lastModifed) {
         return true;
@@ -139,20 +139,20 @@ function* collapseTo(accessorTag, toProtoAccessorTag) {
     if (!isInChain) {
         return true; //不做修改
     }
-    var accessor = yield Accessor.findOne({ thisTag: accessorTag });
-    var forwardAccessor = yield Accessor.findOne({ thisTag: accessor.proto.forward });
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version });
+    var forwardAccessor = yield Accessor.findOne({ thisTag: accessor.proto.forward, version: sysConfig.version });
     if (!forwardAccessor.proto.forward) //不拷贝root 。
     {
         return true;
     }
-    var count = yield CalcRuleDescriptor.find({ "tracer.owner": forwardAccessor.thisTag }).count();
+    var count = yield CalcRuleDescriptor.find({ "tracer.ownerTag": forwardAccessor.thisTag }).count();
     if (count > 0) {
-        var accItems = yield CalcRuleDescriptor.find({ "tracer.owner": accessor.thisTag }, { _id: 0, name: 1 }).toArray();
+        var accItems = yield CalcRuleDescriptor.find({ "tracer.ownerTag": accessor.thisTag }, { _id: 0, name: 1 }).toArray();
         var accNames = [];
         for (let i = 0; i < accItems.length; i++) {
             accNames.push(accItems.name);
         }
-        var forwardItems = yield CalcRuleDescriptor.find({ "tracer.owner": forwardAccessor.thisTag }).select({ _id: 0, name: 1, value: 1 }).nin("name", accNames).toArray();
+        var forwardItems = yield CalcRuleDescriptor.find({ "tracer.ownerTag": forwardAccessor.thisTag }).select({ _id: 0, name: 1, value: 1 }).nin("name", accNames).toArray();
         for (let i = 0; i < forwardItems.length; i++) {
             forwardItems[i].tracer = { updatedTime: Date.now(), ownerTag: accessor.thisTag };
         }
@@ -205,7 +205,7 @@ function* createCalcRules(sourceRuleAccessorTag, options) {
 
         yield collapseTo(aRuleAccessor.thisTag);
 
-        aRuleAccessor = yield Accessor.findOne({ thisTag: aRuleAccessor.thisTag }); //重新更新一次。
+        aRuleAccessor = yield Accessor.findOne({ thisTag: aRuleAccessor.thisTag, version: sysConfig.version }); //重新更新一次。
 
         return aRuleAccessor;
     };
@@ -227,7 +227,7 @@ module.exports.createCalcRules = async(createCalcRules);
 module.exports.getCalcRuleDescriptor = async(getCalcRuleDescriptor);
 
 function* getCalcRuleDescriptor(calcRuleAccessorTag, ruleName) {
-    var calcRuleAccessor = yield Accessor.findOne({ thisTag: calcRuleAccessorTag });
+    var calcRuleAccessor = yield Accessor.findOne({ thisTag: calcRuleAccessorTag, version: sysConfig.version });
     var ruleDes = null;
     while (calcRuleAccessor) {
         let ownerTag = calcRuleAccessor.thisTag;
@@ -236,7 +236,7 @@ function* getCalcRuleDescriptor(calcRuleAccessorTag, ruleName) {
         ruleDes = yield CalcRuleDescriptor.findOne({ "tracer.ownerTag": ownerTag, name: ruleName });
 
         if (!ruleDes) {
-            calcRuleAccessor = yield Accessor.findOne({ thisTag: sourceAccessorTag });
+            calcRuleAccessor = yield Accessor.findOne({ thisTag: sourceAccessorTag, version: sysConfig.version });
             continue;
         }
         break;

@@ -52,6 +52,7 @@ module.exports.initAccessor = initAccessor;
 module.exports.initLogAccessor = initLogAccessor;
 module.exports.initCalcRuleAccessor = initCalcRuleAccessor;
 module.exports.initTerminologyAccessor = initTerminologyAccessor;
+module.exports.initCacheAccessor = initCacheAccessor;
 
 function initAccessor(accessor) {
     accessor.thisTag = getUniqTag();
@@ -59,6 +60,10 @@ function initAccessor(accessor) {
 }
 
 function initPDCAccessor(accessor) {
+    initAccessor(accessor);
+}
+
+function initCacheAccessor(accessor) {
     initAccessor(accessor);
 }
 
@@ -99,7 +104,7 @@ function createAccessorToken() {
  */
 function* isProtoOf(protoAccessorTag, accessorTag) {
 
-    var accessor = yield Accessor.findOne({ thisTag: accessorTag });
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version });
     if (!accessor) {
         return false;
     }
@@ -109,7 +114,7 @@ function* isProtoOf(protoAccessorTag, accessorTag) {
         if (accessor.proto.forward === protoAccessorTag) {
             return true;
         }
-        var forwardAccessor = yield Accessor.findOne({ thisTag: accessor.proto.forward });
+        var forwardAccessor = yield Accessor.findOne({ thisTag: accessor.proto.forward, version: sysConfig.version });
         return yield isProtoOf(protoAccessorTag, forwardAccessor.thisTag);
 
     }
@@ -118,7 +123,7 @@ function* isProtoOf(protoAccessorTag, accessorTag) {
 module.exports.isProtoOf = async(isProtoOf);
 
 function* holdLockAndOper(targetAccessorTag, oper, operOptions) { //调整到db.manager作为通用锁访问，相应的组件有access{}；schema支持继承么？
-    var accessor = yield Accessor.findOne({ _thisTag: targetAccessor });
+    var accessor = yield Accessor.findOne({ thisTag: targetAccessor, version: sysConfig.version });
     if (!accessor) {
         var err = { no: -1, desc: "accessor is not exist!" };
         throw (err);
@@ -186,7 +191,7 @@ function* holdLockAndOper(targetAccessorTag, oper, operOptions) { //调整到db.
         accessor.markModified("concurrent.token");
         yield accessor.save();
         //重新查找一次，确认目前是自己占用了锁。
-        accessor = yield Accessor.findOne({ _thisTag: targetAccessor });
+        accessor = yield Accessor.findOne({ thisTag: targetAccessor, version: sysConfig.version });
         if (accessor.access.token !== operOptions._accessToken) {
             var now = new Date();
             if (now.getTime() - operOptions._startTime.getTime() > operOptions.maxLagTime) { return false } //操作失败。

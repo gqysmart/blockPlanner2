@@ -9,6 +9,7 @@
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const assert = require("assert");
+const sysConfig = require("../config/sys");
 
 const Schema = mongoose.Schema;
 
@@ -17,7 +18,7 @@ const Schema = mongoose.Schema;
  */
 
 const InitConfigSchema = new Schema({
-    version: { type: String, default: "1.0" },
+    version: { type: String, default: sysConfig.version },
     name: { type: String, required: true },
     category: { type: String, required: true },
     value: {}

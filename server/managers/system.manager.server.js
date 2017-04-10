@@ -45,7 +45,6 @@ const systemLogAccessorTagCfgCriteria = dbManager.sysinitedCfgCriteria;
 //
 module.exports.init = async(function*(cb) {
     ////system inited
-
     var initedCfg = yield InitConfig.findOne(initedCfgCriteria);
     if (!initedCfg) {
         try {
@@ -69,9 +68,6 @@ module.exports.init = async(function*(cb) {
     if (cb) {
         cb();
     }
-
-
-
 });
 
 //
