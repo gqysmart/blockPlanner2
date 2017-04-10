@@ -32,6 +32,19 @@ const defaultCalcAndPublishOptions = {
     reCalcNums: 32 //如果有迭代计算，默认为32次。
 }
 
+function* getCalcRuleValueFromPDC(pdcAccessorTag, calcRuleAccessorTag, calcRuleName) {
+    var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag });
+    var pdcItem = yield PDCItem.findOne({ "tracer.ownerTag": pdcAccessor, name: calcRuleName });
+    if (!pdcItem) {
+        return yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName);
+    } else {
+        return pdcItem.value;
+
+    }
+
+};
+module.exports.getCalcRuleValueFromPDC = async(getCalcRuleValueFromPDC);
+
 function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, options) {
     if (!options) { options = {} };
     _.defaults(options, defaultCalcAndPublishOptions);
@@ -129,7 +142,10 @@ function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, opti
                 _pdcItem.value = parseResult;
                 _pdcItem.applyRecalc = true; //依赖项是现在重新计算？还是提示手动，应该还是修改lastmodifed time，让后续模块自行判断。
                 yield _pdcItem.save();
-                yield applyRecalc(pdcAccessorTag, calcRuleAccessorTag, options)
+                yield applyRecalc(pdcAccessorTag, calcRuleAccessorTag, options);
+                pdcAccessor.timemark.lastModified = Date.now();
+                yield pdcAccessor.save();
+                return true;
             }
         } else {
             _pdcItem = new PDCItem();
@@ -137,9 +153,13 @@ function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, opti
             _pdcItem.value = parseResult.value;
             _pdcItem.tracer.ownerTag = pdcAccessorTag;
             yield _pdcItem.save(); //这里应该要查找一下是不是在创建时，已经有其他的任务已经添加了该item的计算item
+            return true;
         }
     });
-    var success = yield dbManager.holdLockAndOper(pdcAccessor, oper, options);
+    var success = yield dbManager.holdLockAndOper(pdcAccessorTag, oper, options);
 
-    if (success == true) { return _pdcItem.value; } else { return null; }
+
+    if (success == true) {
+        return _pdcItem.value;
+    } else { return null; }
 }

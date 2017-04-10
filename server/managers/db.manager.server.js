@@ -58,6 +58,10 @@ function initAccessor(accessor) {
     accessor.timemark.lastModifed = Date.now();
 }
 
+function initPDCAccessor(accessor) {
+    initAccessor(accessor);
+}
+
 function initLogAccessor(accessor) {
     initAccessor(accessor);
     accessor.special = { logLevel: 7 };
@@ -113,7 +117,7 @@ function* isProtoOf(protoAccessorTag, accessorTag) {
 }
 module.exports.isProtoOf = async(isProtoOf);
 
-function* holdLockAndOper(targetAccessor, oper, operOptions) { //调整到db.manager作为通用锁访问，相应的组件有access{}；schema支持继承么？
+function* holdLockAndOper(targetAccessorTag, oper, operOptions) { //调整到db.manager作为通用锁访问，相应的组件有access{}；schema支持继承么？
     var accessor = yield Accessor.findOne({ _thisTag: targetAccessor });
     if (!accessor) {
         var err = { no: -1, desc: "accessor is not exist!" };
@@ -143,7 +147,7 @@ function* holdLockAndOper(targetAccessor, oper, operOptions) { //调整到db.man
         var promise = new Promise(function(resolve, reject) {
             co(function*() {
                 try {
-                    oper(operOptions);
+                    return oper(operOptions);
 
                 } catch (e) {
                     throw (e);
