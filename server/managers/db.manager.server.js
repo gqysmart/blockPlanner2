@@ -100,7 +100,8 @@ const defaultHoldOptions = {
 
 //访问器 有并发访问器，安全访问器，跟踪访问器等等。
 function createAccessorToken() {
-    return new ObjectID();
+    var token = new ObjectID();
+    return token.toString();
 }
 /**
  * is protoAccessorTag in proto chainof accessorTag
@@ -128,7 +129,7 @@ function* isProtoOf(protoAccessorTag, accessorTag) {
 module.exports.isProtoOf = async(isProtoOf);
 
 function* holdLockAndOper(targetAccessorTag, oper, context) { //调整到db.manager作为通用锁访问，相应的组件有access{}；schema支持继承么？
-    var accessor = yield Accessor.findOne({ thisTag: targetAccessor, version: sysConfig.version });
+    var accessor = yield Accessor.findOne({ thisTag: targetAccessorTag, version: sysConfig.version });
     if (!accessor) {
         var err = { no: -1, desc: "accessor is not exist!" };
         throw (err);
@@ -146,7 +147,7 @@ function* holdLockAndOper(targetAccessorTag, oper, context) { //调整到db.mana
         var promise = new Promise(function(resolve, reject) {
             co(function*() {
                 yield pause(randomPauseTime);
-                yield co(holdLockAndOper(targetAccessor, oper, context));
+                yield co(holdLockAndOper(targetAccessorTag, oper, context));
                 resolve(randomPauseTime);
             });
         });
@@ -182,10 +183,10 @@ function* holdLockAndOper(targetAccessorTag, oper, context) { //调整到db.mana
         context._accessToken = createAccessorToken(); //新建随机accesstag，为防止死锁，需要考虑按规则强行释放。
     }
     //
-    if (accessor.concurrent.token && accessor.concurrent.hostTag === context._accessToken) { //重入
+    if (accessor.concurrent.token && accessor.concurrent.token === context._accessToken) { //重入
         yield doOpers();
         return true;
-    } else if (accessor.concurrent.token !== context._accessToken) {
+    } else if (accessor.concurrent.token && accessor.concurrent.token !== context._accessToken) {
         var now = new Date();
         if (now.getTime() - context._startTime.getTime() > context.maxLagTime) { return false } //操作失败。
         else { //尝试随机时间后，再尝试修改
@@ -196,8 +197,8 @@ function* holdLockAndOper(targetAccessorTag, oper, context) { //调整到db.mana
         accessor.markModified("concurrent.token");
         yield accessor.save();
         //重新查找一次，确认目前是自己占用了锁。
-        accessor = yield Accessor.findOne({ thisTag: targetAccessor, version: sysConfig.version });
-        if (accessor.access.token !== context._accessToken) {
+        accessor = yield Accessor.findOne({ thisTag: targetAccessorTag, version: sysConfig.version });
+        if (accessor.concurrent.token !== context._accessToken) {
             var now = new Date();
             if (now.getTime() - context._startTime.getTime() > context.maxLagTime) { return false } //操作失败。
             else { //尝试随机时间后，再尝试修改

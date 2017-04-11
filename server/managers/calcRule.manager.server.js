@@ -215,6 +215,10 @@ function* createCalcRules(sourceRuleAccessorTag, options) {
     //参数调整
     if (!options) { options = {} };
     options = _.defaults(options, defaultCreateOptions);
+    if (!sourceRuleAccessorTag) {
+        var sourceRuleAccessorTagCfg = yield InitConfig.findOne(dbMgr.rootCalcRuleAccessorTagCfgCriteria);
+        sourceRuleAccessorTag = sourceRuleAccessorTagCfg.value;
+    }
     //copy，dependence等等。
     //
     var newRuleAccessor = null;

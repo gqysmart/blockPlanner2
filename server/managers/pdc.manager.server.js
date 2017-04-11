@@ -21,6 +21,7 @@ const Accessor = mongoose.model("Accessor");
 const calcRuleManger = require("./calcRule.manager.server");
 const _ = require("lodash");
 const dbMgr = require("./db.manager.server");
+const sysConfig = require("../config/sys");
 
 
 
@@ -34,32 +35,36 @@ const defaultCalcAndPublishcontext = {
 
 function* getCalcRuleValueFromPDC(pdcAccessorTag, calcRuleAccessorTag, calcRuleName) {
     var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag, version: sysConfig.version });
-    var pdcItem = yield PDCItem.findOne({ "tracer.ownerTag": pdcAccessor, name: calcRuleName });
+    var pdcItem = yield PDCItem.findOne({ "tracer.ownerTag": pdcAccessorTag, name: calcRuleName });
     if (!pdcItem) {
         //首先要lock住pdcAccessor，因为有可能会有其他需要添加的请求,lock calcrule,因为计算时如果有规则改变会影响结果。
+        var context = {};
         var success = yield dbMgr.holdLockAndOper(pdcAccessorTag, async(function*() {
-            var success = yield dbMgr.holdLockAndOper(calcRuleAccessorTag, async(function*() {
-                return yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName);
-            }));
-            if (!success) {
-                var err = { no: -1, desc: "calcRule is changing!" };
-                throw (err);
-            }
-        }));
-        if (!success) {
-            var err = { no: -1, desc: `can't hold PDCAccessor=${pdcAccessorTag}.` };
-            throw (err);
-        }
-    } else {
-        return pdcItem.value;
+            yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName);
+            //     var success = yield dbMgr.holdLockAndOper(calcRuleAccessorTag, async(function*() {
+            //         return yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName);
+            //     }), context);
+            //     if (!success) {
+            //         var err = { no: -1, desc: "calcRule is changing!" };
+            //         throw (err);
+            //     }
+            // }), context);
+            // if (!success) {
+            //     var err = { no: -1, desc: `can't hold PDCAccessor=${pdcAccessorTag}.` };
+            //     throw (err);
 
+            // } else {
+            //     return pdcItem.value;
+
+            // }
+        }));
     }
 
     function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, context) {
         if (!context) { context = {} };
         _.defaults(context, defaultCalcAndPublishcontext);
         //
-        var pdcAccessor = yield Accessor.findOne({ thisTag, pdcAccessorTag, version: sysConfig.version });
+        var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag, version: sysConfig.version });
         if (!pdcAccessor) {
             var err = { no: -1, desc: `pdcAccessor=${pdcAccessorTag} doesn't exist.` }
             throw (err);

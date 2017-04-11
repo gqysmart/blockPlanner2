@@ -102,7 +102,7 @@ function* getRecordFromIncubatorByRuleTerminologyTag(incubatorAccessorTag, incub
 
     function* laborAndRecord() {
         var terminologyAccessorTagCfg = yield InitConfig.findOne(dbMgr.terminologyAccessorTagCfgCriteria);
-        var content = yield constructHierarchy(ruleTerminologyTag, incubator.container.pdcAccessorTag, incubator.strategy.calcRuleAccessorTag, terminologyAccessorTagCfg.value);
+        var content = yield constructHierarchy(ruleTerminologyTag, incubator.container.PDCAccessorTag, incubator.strategy.calcRuleAccessorTag, terminologyAccessorTagCfg.value);
         var data = {
             body: content
         };

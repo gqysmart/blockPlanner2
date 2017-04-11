@@ -79,27 +79,29 @@ module.exports.qualifiedName2TerminologyTag = async(qualifiedName2TerminologyTag
 module.exports.terminologyTag2QualifiedName = async(terminologyTag2QualifiedName);
 
 function* terminologyTag2QualifiedName(terminologyTag, terminologyAccessorTag, options) {
+    if (!options) { options = {} };
+    _.defaults(options, defaultTransfer2TerminologyTagOptions);
+    //
     var qualifiedName = '';
     yield getPrettyName(terminologyTag);
 
     function* getPrettyName(terminologyTag) {
-        var terminologyItem = Terminology.fidOne({ name: terminologyTag, "tracer.ownerTag": terminologyAccessorTag });
+        var terminologyItem = yield Terminology.findOne({ name: terminologyTag, "tracer.ownerTag": terminologyAccessorTag });
         switch (options.lan) {
-            case en:
+            case "en":
                 qualifiedName = terminologyItem.desc.en + options.delimiter + qualifiedName;
                 break;
-            case cn:
+            case "cn":
                 qualifiedName = terminologyItem.desc.cn + options.delimiter + qualifiedName;
                 break;
         }
         if (!terminologyItem.parentName) {
             return;
         }
-        getPrettyName(terminologyItem.parentName);
+        yield getPrettyName(terminologyItem.parentName);
 
     }
-
-    return qualifiedName;
+    return qualifiedName.slice(0, qualifiedName.length - 1);
 
 
 
