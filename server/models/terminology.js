@@ -26,5 +26,6 @@ const terminologySchema = new Schema({
     aliasName: [{}]
 });
 //索引了，
+//查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
 terminologySchema.index({ "tracer.ownerTag": 1, name: 1, "desc.en": 1, parentName: 1 });
 mongoose.model('Terminology', terminologySchema);

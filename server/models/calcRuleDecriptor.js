@@ -35,6 +35,7 @@ const CalcRuleDescriptorSchema = new Schema({
 
 
 //create query index
+//查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
 
 
 mongoose.model('CalcRuleDescriptor', CalcRuleDescriptorSchema);

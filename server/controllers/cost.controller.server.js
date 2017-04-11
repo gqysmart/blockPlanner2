@@ -13,12 +13,13 @@ const mongoose = require("mongoose");
 const sysConfig = require("../config/sys");
 const costMgr = require("../managers/cost.manager.server");
 const terminologyMgr = require("../managers/terminology.manager.server");
+const incubatorMgr = require("../managers/incubator.manager.server");
 const dbMgr = require("../managers/db.manager.server");
 const InitConfig = mongoose.model("InitConfig");
 
 module.exports.loadCostInfo = function(req, res, next) {
 
-    // var planCostClassCache = {
+    // var planCostClassRecord = {
     //     name: "xxxx",
     //     costClass: [{
     //         name: "总成本",
@@ -57,8 +58,12 @@ module.exports.loadCostInfo = function(req, res, next) {
             lan: "cn",
             delimiter: "/"
         };
-        var nameTag = yield terminologyMgr.qulifiedName2TerminologyTag(rootRuleName, terminologyAccessorTagCfg.value, tranferOptions);
-        res.end(nameTag.toString());
+        var nameTag = yield terminologyMgr.qualifiedName2TerminologyTag(rootRuleName, terminologyAccessorTagCfg.value, tranferOptions);
+
+        var incubator = yield incubatorMgr.createIncubator();
+        var record = yield incubatorMgr.getRecordFromIncubatorByRuleTerminologyTag(incubator.tracer.ownerTag, incubator.name, nameTag);
+
+        res.end(record.toString());
 
 
     })

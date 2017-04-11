@@ -40,7 +40,7 @@
             "type": "node",
             "request": "launch",
             "name": "mongodb",
-            "program": "${workspaceRoot}/db/costRulesDatabase.js",
+            "program": "${workspaceRoot}/db/gc-costRulesDatabase.js",
             "cwd": "${workspaceRoot}"
         }, {
             "type": "node",

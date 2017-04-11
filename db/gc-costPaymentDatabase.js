@@ -8,7 +8,7 @@ const assert = require("assert");
 const co = require("co");
 const GCDBConnString = "mongodb://localhost:27017/goodcity";
 const testConnString = "mongodb://localhost:27017/test";
-const version = "v1"
+const version = ""
 const termCollection = "architecture.terminology" + version;
 const costRules = "architecture.costRules" + version;
 

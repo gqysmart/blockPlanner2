@@ -148,6 +148,9 @@ var termList = [{
                 name: { en: "periodcost", cn: "期间费用" },
                 desc: ""
             }, {
+                name: { en: "periodcost", cn: "返还费用" },
+                desc: ""
+            }, {
                 name: { en: "investmentwithouttax", cn: "不含税费总投资" },
                 desc: ""
             }, {

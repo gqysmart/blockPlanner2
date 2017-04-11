@@ -35,6 +35,7 @@ const InitConfig = mongoose.model("InitConfig");
 const Log = mongoose.model("Log");
 const Accessor = mongoose.model("Accessor");
 const Terminology = mongoose.model("Terminology");
+const CalcRuleDescriptor = mongoose.model("CalcRuleDescriptor");
 
 //
 const initedCfgCriteria = dbManager.sysinitedCfgCriteria;
@@ -57,6 +58,10 @@ module.exports.init = async(function*(cb) {
 
 
         } catch (e) {
+
+            yield Terminology.remove();
+            yield InitConfig.remove()
+            yield CalcRuleDescriptor.remove();
             throw (e);
 
         } finally {
@@ -85,10 +90,10 @@ function* initCalcRuleDB() {
         for (let i = 0; i < sysRules.length; i++) {
             var sysrule = sysRules[i];
             var tmpRule = new CalcRuleDescriptor();
-            tmpRule.name = sysrule.nameID;
-            tmpRule.rule.base = sysrule.compute.deps;
-            tmpRule.rule.desc = sysrule.compute.desc;
-            tmpRule.rule.markdown = sysrule.compute.markdown;
+            tmpRule.name = sysrule.name;
+            tmpRule.rule.bases = sysrule.rule.bases;
+            tmpRule.rule.desc = sysrule.rule.desc;
+            tmpRule.rule.markdown = sysrule.rule.markdown;
             tmpRule.tracer.ownerTag = originRule.thisTag;
             yield tmpRule.save();
         }

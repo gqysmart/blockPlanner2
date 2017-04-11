@@ -20,10 +20,15 @@ const Schema = mongoose.Schema;
  * user schema
  */
 
-const cacheSchema = new Schema({
-    cache: {
-        category: { type: String, default: "default" },
-        data: {},
+const recordSchema = new Schema({
+    record: {
+        category: { type: String, default: "default" }, //对于信息展示，使用信息的qulifiedName，或者thisTag.toString();
+        environment: { type: String, require: true }, //根据环境找到相同category名，由calcRuleId.pdcId
+        data: {
+            abstract: String,
+            keyWords: [String],
+            body: {}
+        },
 
     },
     tracer: {
@@ -38,9 +43,10 @@ const cacheSchema = new Schema({
 
 
 //create query index
+//查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
 
 
-mongoose.model('Cache', cacheSchema);
+mongoose.model('Record', recordSchema);
 
 // /**
 //  *

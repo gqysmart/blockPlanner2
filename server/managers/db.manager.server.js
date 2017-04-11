@@ -52,7 +52,9 @@ module.exports.initAccessor = initAccessor;
 module.exports.initLogAccessor = initLogAccessor;
 module.exports.initCalcRuleAccessor = initCalcRuleAccessor;
 module.exports.initTerminologyAccessor = initTerminologyAccessor;
-module.exports.initCacheAccessor = initCacheAccessor;
+module.exports.initRecordAccessor = initRecordAccessor;
+module.exports.initIncubatorAccessor = initIncubatorAccessor;
+module.exports.initPDCAccessor = initPDCAccessor;
 
 function initAccessor(accessor) {
     accessor.thisTag = getUniqTag();
@@ -63,7 +65,7 @@ function initPDCAccessor(accessor) {
     initAccessor(accessor);
 }
 
-function initCacheAccessor(accessor) {
+function initRecordAccessor(accessor) {
     initAccessor(accessor);
 }
 
@@ -81,6 +83,9 @@ function initTerminologyAccessor(accessor) {
 
 }
 
+function initIncubatorAccessor(accessor) {
+    initAccessor(accessor);
+}
 
 
 const defaultHoldOptions = {
@@ -90,7 +95,7 @@ const defaultHoldOptions = {
  * 
  * @param {*} modelName 访问控制块mongoose model 名。
  * @param {*} accessorID 
- * @param {*} operOptions 
+ * @param {*} context 
  */
 
 //访问器 有并发访问器，安全访问器，跟踪访问器等等。
@@ -122,7 +127,7 @@ function* isProtoOf(protoAccessorTag, accessorTag) {
 }
 module.exports.isProtoOf = async(isProtoOf);
 
-function* holdLockAndOper(targetAccessorTag, oper, operOptions) { //调整到db.manager作为通用锁访问，相应的组件有access{}；schema支持继承么？
+function* holdLockAndOper(targetAccessorTag, oper, context) { //调整到db.manager作为通用锁访问，相应的组件有access{}；schema支持继承么？
     var accessor = yield Accessor.findOne({ thisTag: targetAccessor, version: sysConfig.version });
     if (!accessor) {
         var err = { no: -1, desc: "accessor is not exist!" };
@@ -141,7 +146,7 @@ function* holdLockAndOper(targetAccessorTag, oper, operOptions) { //调整到db.
         var promise = new Promise(function(resolve, reject) {
             co(function*() {
                 yield pause(randomPauseTime);
-                yield co(holdLockAndOper(targetAccessor, oper, operOptions));
+                yield co(holdLockAndOper(targetAccessor, oper, context));
                 resolve(randomPauseTime);
             });
         });
@@ -152,7 +157,7 @@ function* holdLockAndOper(targetAccessorTag, oper, operOptions) { //调整到db.
         var promise = new Promise(function(resolve, reject) {
             co(function*() {
                 try {
-                    return oper(operOptions);
+                    return oper(context);
 
                 } catch (e) {
                     throw (e);
@@ -170,31 +175,31 @@ function* holdLockAndOper(targetAccessorTag, oper, operOptions) { //调整到db.
 
 
     //参数调整
-    if (!operOptions) { operOptions = {}; };
-    operOptions = _.defaults(operOptions, defaultHoldOptions);
-    if (!operOptions._startTime) { operOptions._startTime = new Date() }; //计时
-    if (!operOptions._accessToken) {
-        operOptions._accessToken = createAccessorToken(); //新建随机accesstag，为防止死锁，需要考虑按规则强行释放。
+    if (!context) { context = {}; };
+    context = _.defaults(context, defaultHoldOptions);
+    if (!context._startTime) { context._startTime = new Date() }; //计时
+    if (!context._accessToken) {
+        context._accessToken = createAccessorToken(); //新建随机accesstag，为防止死锁，需要考虑按规则强行释放。
     }
     //
-    if (accessor.concurrent.token && accessor.concurrent.hostTag === operOptions._accessToken) { //重入
+    if (accessor.concurrent.token && accessor.concurrent.hostTag === context._accessToken) { //重入
         yield doOpers();
         return true;
-    } else if (accessor.concurrent.token !== operOptions._accessToken) {
+    } else if (accessor.concurrent.token !== context._accessToken) {
         var now = new Date();
-        if (now.getTime() - operOptions._startTime.getTime() > operOptions.maxLagTime) { return false } //操作失败。
+        if (now.getTime() - context._startTime.getTime() > context.maxLagTime) { return false } //操作失败。
         else { //尝试随机时间后，再尝试修改
             yield pauseAndRehold(); //0.5秒以内，重新尝试一次。
         }
     } else if (!accessor.concurrent.token) {
-        accessor.concurrent.token = operOptions._accessToken;
+        accessor.concurrent.token = context._accessToken;
         accessor.markModified("concurrent.token");
         yield accessor.save();
         //重新查找一次，确认目前是自己占用了锁。
         accessor = yield Accessor.findOne({ thisTag: targetAccessor, version: sysConfig.version });
-        if (accessor.access.token !== operOptions._accessToken) {
+        if (accessor.access.token !== context._accessToken) {
             var now = new Date();
-            if (now.getTime() - operOptions._startTime.getTime() > operOptions.maxLagTime) { return false } //操作失败。
+            if (now.getTime() - context._startTime.getTime() > context.maxLagTime) { return false } //操作失败。
             else { //尝试随机时间后，再尝试修改
                 yield pauseAndRehold(); //0.5秒以内，重新尝试一次。
             }

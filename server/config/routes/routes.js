@@ -10,8 +10,6 @@ const users = require("../../controllers/users.controller.server");
 const assets = require("../../controllers/assets.controller.server");
 const cost = require("../../controllers/cost.controller.server");
 const auth = require("../middlewares/authorization");
-const planManager = require("../../managers/plan.manager.server");
-const calcRuleManager = require("../../managers/calcRule.manager.server");
 
 const ObjectID = require("mongodb").ObjectID;
 
@@ -77,11 +75,6 @@ module.exports = function(app, passport) {
         //test plan
         var app = req.params.app;
         res.render(app + "/views/index");
-        planManager.createPlan(new ObjectID(), function(plan) {
-
-
-
-        })
 
 
 

@@ -16,10 +16,10 @@ const Terminology = mongoose.model("Terminology");
 //
 const defaultTransfer2TerminologyTagOptions = {
     delimiter: ".",
-    lan: "en" //en,cn
+    lan: "cn" //en,cn
 }
 
-function* qulifiedName2TerminologyTag(qName, terminologyAccessorTag, options) {
+function* qualifiedName2TerminologyTag(qName, terminologyAccessorTag, options) {
     if (!_.isString(qName)) return null;
     if (!options) { options = {} };
     _.defaults(options, defaultTransfer2TerminologyTagOptions);
@@ -74,4 +74,34 @@ function* qulifiedName2TerminologyTag(qName, terminologyAccessorTag, options) {
     return lastTag;
 };
 
-module.exports.qulifiedName2TerminologyTag = async(qulifiedName2TerminologyTag);
+module.exports.qualifiedName2TerminologyTag = async(qualifiedName2TerminologyTag);
+
+module.exports.terminologyTag2QualifiedName = async(terminologyTag2QualifiedName);
+
+function* terminologyTag2QualifiedName(terminologyTag, terminologyAccessorTag, options) {
+    var qualifiedName = '';
+    yield getPrettyName(terminologyTag);
+
+    function* getPrettyName(terminologyTag) {
+        var terminologyItem = Terminology.fidOne({ name: terminologyTag, "tracer.ownerTag": terminologyAccessorTag });
+        switch (options.lan) {
+            case en:
+                qualifiedName = terminologyItem.desc.en + options.delimiter + qualifiedName;
+                break;
+            case cn:
+                qualifiedName = terminologyItem.desc.cn + options.delimiter + qualifiedName;
+                break;
+        }
+        if (!terminologyItem.parentName) {
+            return;
+        }
+        getPrettyName(terminologyItem.parentName);
+
+    }
+
+    return qualifiedName;
+
+
+
+
+}

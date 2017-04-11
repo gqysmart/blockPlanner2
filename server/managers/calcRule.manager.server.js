@@ -17,8 +17,8 @@ const CalcRuleDescriptor = mongoose.model("CalcRuleDescriptor");
 //const CalcRuleAccessor = mongoose.model("CalcRuleAccessor");
 const InitConfig = mongoose.model("InitConfig");
 const Accessor = mongoose.model("Accessor");
-const dbManager = require("./db.manager.server");
-const rootCalcRuleAccessorTagCfgCriteria = dbManager.rootCalcRuleAccessorTagCfgCriteria
+const dbMgr = require("./db.manager.server");
+const rootCalcRuleAccessorTagCfgCriteria = dbMgr.rootCalcRuleAccessorTagCfgCriteria
 
 
 
@@ -28,9 +28,27 @@ const defaultCreateOptions = {
     type: "copy",
 };
 
+function* ruleValidator(ruleInfo) {
+    function* nameValidator(ruleInfo) {
 
+    };
 
-function* modifyCalcRule(ruleAccessorTag, ruleInfo) { //complicated.
+    function* ruleBasesValidator(ruleInfo) {
+
+    };
+
+    function* ruleDescValidator(ruleInfo) {
+
+    };
+
+    return {
+        result: true,
+        // desc: "validator err info"
+    }
+
+};
+
+function* modifyCalcRule(ruleAccessorTag, ruleInfo) { //complicated.  //update，add  删除规则是没有必要且不允许的。
     function isRuleChanged(ruleA, ruleB) {
         return true; //这里确认规则改变的责任交给客户端完成。
     };
@@ -42,47 +60,63 @@ function* modifyCalcRule(ruleAccessorTag, ruleInfo) { //complicated.
         }
         return true; //在自身中
     };
+
+    function* doAddCalcRule(ruleInfo) {
+
+        return yield doUpateCalcrule(ruleInfo); //实际操作是一样的。
+    };
+
+    function* doUpateCalcrule(ruleInfo) {
+
+        //判断是否是自己的修改列表，lastmodifed time 。
+        yield dbMgr.holdLockAndOper(rulAccessorTag, async(function*() {
+            var inSelf = yield ifRuleDesInself(rulAccessorTag, ruleInfo.name); //hold 之后再检查，因为有可能rulelist被修改过了。
+            if (!inSelf) {
+                //在原型链中
+                var modifiedRuleDes = new CalcRuleDescriptor();
+                modifiedRuleDes.name = ruleInfo.name;
+                modifiedRuleDes.rule = ruleInfo.rule;
+                modifiedRuleDes.tracer.ownerTag = rulAccessorTag;
+                yield modifiedRuleDes.save();
+                yield Accessor.findOneAndUpdate({ thisTag: ruleAccessorTag, version: sysConfig.version }, { "timemark.lastModified": Date.now() });
+                //仅仅保存修改时间。
+
+            } else {
+                var existedRuleDes = yield getCalcRuleDescriptor(ruleAccessorTag, ruleInfo.name);
+
+                existedRuleDes.rule = ruleInfo.rule;
+                existedRuleDes.tracer.updatedTime = Date.now();
+                yield existedRuleDes.save();
+                yield Accessor.findOneAndUpdate({ thisTag: ruleAccessorTag, version: sysConfig.version }, { "timemark.lastModified": Date.now() });
+                //仅仅保存修改时间。
+
+            }
+
+        }));
+
+
+    };
     //判断值是不是一样，不一样，就添加一个owner为自己的descriptor。
     //1. 
+    var isValidated = yield ruleValidator(ruleInfo);
+    if (!isValidated.result) {
+        var err = { no: -1, desc: isValidated.desc };
+        throw (err);
+    }
     var ruleName = ruleInfo.name;
     var ruleAccessor = yield Accessor.findOne({ thisTag: ruleAccessorTag, version: sysConfig.version });
     var existedRuleDes = yield getCalcRuleDescriptor(ruleAccessorTag, ruleName);
     if (!existedRuleDes) {
-        var err = { no: -1, desc: `modifyCalcRule:ruleAccessorTag=${ruleAccessorTag},ruleName=${ruleName} doesn't exist.` }
-        throw (err);
-    }
-    var changed = isRuleChanged(ruleInfo, existedRuleDes);
-    if (changed) {
-        //判断是否是自己的修改列表，lastmodifed time 。
-
-        var inSelf = yield ifRuleDesInself(rulAccessorTag);
-        if (!inSelf) {
-            //在原型链中
-            var modifiedRuleDes = new CalcRuleDescriptor();
-            modifiedRuleDes.name = ruleInfo.name;
-            modifiedRuleDes.rule = ruleInfo.rule;
-            modifiedRuleDes.tracer.ownerTag = rulAccessorTag;
-            yield modifiedRuleDes.save();
-            ruleAccessor.timemark.lastModifed = Date.now();
-            yield ruleAccessor.save(); //仅仅保存修改时间。
-
-        } else {
-
-            existedRuleDes.rule = ruleInfo.rule;
-            existedRuleDes.tracer.updatedTime = Date.now();
-            yield existedRuleDes.save();
-            ruleAccessor.timemark.lastModifed = Date.now();
-            yield ruleAccessor.save(); //仅仅保存修改时间。
-
+        //如果没有，add 计算规则，需要对规则进行必要的验证。
+        yield doAddCalcRule(ruleInfo);
+    } else {
+        var changed = isRuleChanged(ruleInfo, existedRuleDes);
+        if (changed) {
+            yield doUpateCalcrule(ruleInfo);
         }
-
-
-
     }
 
-
-
-}
+};
 const defaultModifyCalcRuleOptions = {
     discard: false
 };
@@ -90,11 +124,12 @@ const defaultModifyCalcRuleOptions = {
 function* modifyCalcRuleProto(protoAccessorTag, accessorTag, options) {
     if (!options) { options = {} };
     _.defaults(options, defaultModifyCalcRuleOptions);
-    var inChain = yield dbManager.isProtoOf(accessorTag, protoAccessorTag); //防止死循坏
+    var inChain = yield dbMgr.isProtoOf(accessorTag, protoAccessorTag); //防止死循坏
     if (inChain) {
         return false;
     }
     var accessor = yield Accessor.findOne({ thisTag, accessorTag, version: sysConfig.version });
+
     if (options.discard) //抛弃掉以前在原proto时时的修改。
     {
         yield CalcRuleDescriptor.remove({ "tracer.ownerTag": accessorTag });
@@ -135,7 +170,7 @@ function* collapseTo(accessorTag, toProtoAccessorTag) {
         var rootRuleAccessorTagCfg = yield InitConfig.findOne(rootCalcRuleAccessorTagCfgCriteria);
         toProtoAccessorTag = rootRuleAccessorTagCfg.value;
     }
-    var isInChain = yield isProtoOf(toProtoAccessorTag, accessorTag);
+    var isInChain = yield dbMgr.isProtoOf(toProtoAccessorTag, accessorTag);
     if (!isInChain) {
         return true; //不做修改
     }
@@ -198,7 +233,7 @@ function* createCalcRules(sourceRuleAccessorTag, options) {
 
     function* createCalcRuleByCopy() {
         var aRuleAccessor = new Accessor();
-        dbManager.initCalcRuleAccessor(newRuleAccessor);
+        dbMgr.initCalcRuleAccessor(aRuleAccessor);
         aRuleAccessor.proto.forward = sourceRuleAccessorTag;
         aRuleAccessor.timemark.forward = Date.now();
         yield aRuleAccessor.save();
@@ -212,7 +247,7 @@ function* createCalcRules(sourceRuleAccessorTag, options) {
 
     function* createCalcRuleByProto() {
         var aRuleAccessor = new Accessor();
-        dbManager.initCalcRuleAccessor(newRuleAccessor);
+        dbMgr.initCalcRuleAccessor(newRuleAccessor);
 
         aRuleAccessor.proto.forward = sourceRuleAccessorTag;
         aRuleAccessor.timemark.forwardUpdated = Date.now();
@@ -244,7 +279,7 @@ function* getCalcRuleDescriptor(calcRuleAccessorTag, ruleName) {
     if (ruleDes) {
         return ruleDes;
     } else {
-        var err = { no: -1, desc: `calcruleName=${ruleName} and accessor=${calcRuleAccessorTag} hasn't found ruledes` };
+        var err = { no: -1, desc: `calcruleName=${ruleName} and accessor=${calcRuleAccessorTag} hasn't found ruledescriptor` };
         throw (err);
     }
 };
