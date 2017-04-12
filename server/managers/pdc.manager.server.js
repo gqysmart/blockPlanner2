@@ -39,144 +39,188 @@ function* getCalcRuleValueFromPDC(pdcAccessorTag, calcRuleAccessorTag, calcRuleN
     if (!pdcItem) {
         //首先要lock住pdcAccessor，因为有可能会有其他需要添加的请求,lock calcrule,因为计算时如果有规则改变会影响结果。
         var context = {};
-        var success = yield dbMgr.holdLockAndOper(pdcAccessorTag, async(function*() {
-            yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName);
-            //     var success = yield dbMgr.holdLockAndOper(calcRuleAccessorTag, async(function*() {
-            //         return yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName);
-            //     }), context);
-            //     if (!success) {
-            //         var err = { no: -1, desc: "calcRule is changing!" };
-            //         throw (err);
-            //     }
-            // }), context);
-            // if (!success) {
-            //     var err = { no: -1, desc: `can't hold PDCAccessor=${pdcAccessorTag}.` };
-            //     throw (err);
+        var success = yield dbMgr.holdLockAndOper(pdcAccessorTag, async(function*(context) {
+            // yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName);
+            var success = yield dbMgr.holdLockAndOper(calcRuleAccessorTag, async(function*(context) {
+                return yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, context);
+            }), context);
+            if (!success) {
+                var err = { no: -1, desc: "calcRule is changing!" };
+                throw (err);
+            }
+        }), context);
+        if (!success) {
+            var err = { no: -1, desc: `can't hold PDCAccessor=${pdcAccessorTag}.` };
+            throw (err);
 
-            // } else {
-            //     return pdcItem.value;
+        } else {
+            pdcItem = yield PDCItem.findOne({ "tracer.ownerTag": pdcAccessorTag, name: calcRuleName });
+            return pdcItem.value;
 
-            // }
-        }));
+        }
+    };
+}
+
+function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, context) {
+    if (!context) { context = {} };
+    _.defaults(context, defaultCalcAndPublishcontext);
+    //
+    var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag, version: sysConfig.version });
+    if (!pdcAccessor) {
+        var err = { no: -1, desc: `pdcAccessor=${pdcAccessorTag} doesn't exist.` }
+        throw (err);
     }
 
-    function* calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, calcRuleName, context) {
+    var ruleDesc = yield calcRuleManger.getCalcRuleDescriptor(calcRuleAccessorTag, calcRuleName);
+    if (!ruleDesc) {
+        var err = { no: -1, desc: `calcRuleName=${calcRuleName} doesn't exist.` }
+        throw (err);
+    }
+
+    var bases = ruleDesc.rule.bases;
+    var baseValues = [];
+    if (bases && bases.length > 0) { //pdc locked?  //是否考虑添加重入锁，否则这里要考虑释放lock
+        //先处理依赖项
+
+        for (let i = 0; i < bases.length; i++) {
+            var value = yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, bases[i], context);
+            if (!value) {
+                var err = { no: -1, desc: `calcRuleName=${base[i]} doesn't exist.` };
+                throw (err);
+            }
+            baseValues.push(value);
+        }
+    }
+
+    function* applyRecalc(pdcAccessorTag, calcRuleAccessorTag, context) {
         if (!context) { context = {} };
-        _.defaults(context, defaultCalcAndPublishcontext);
-        //
+        if (!context._reCalcTimes) { context._reCalcTimes = 0; }
+
         var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag, version: sysConfig.version });
-        if (!pdcAccessor) {
-            var err = { no: -1, desc: `pdcAccessor=${pdcAccessorTag} doesn't exist.` }
-            throw (err);
+        var calcRuleAccessor = yield Accessor.findOne({ thisTag: calcRuleAccessorTag, version: sysConfig.version });
+
+        var appliedPDCItems = yield PDCItem.find({ "tracer.ownerTag": pdcAccessor.thisTag, applyRecalc: true }).toArray();
+        if (appliedPDCItems.length === 0) { return true; }
+        var appliedNames = [];
+        for (let i = 0; i < appliedPDCItems.length; i++) {
+            appliedNames.push(appliedPDCItems[i].name);
+        }
+        for (let i = 0; i < appliedPDCItems; i++) {
+            let item = appliedPDCItems[i];
+            var depsItems = yield getCalcRuleDescriptor.find({ "tracer.ownerTag": calcRuleAccessor.thisTag, name: { $in: appliedNames }, "rule.base": item.name }).toArray();
+            for (let j = 0; j < depsItems.length; j++) {
+                let depItem = depsItems[i];
+                yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, depItem.name, context)
+            }
+            item.applyRecalc = false;
+            yield item.save();
         }
 
-        var ruleDesc = yield calcRuleManger.getCalcRuleDescriptor(calcRuleAccessorTag, calcRuleName);
-        if (!ruleDesc) {
-            var err = { no: -1, desc: `calcRuleName=${calcRuleName} doesn't exist.` }
-            throw (err);
+        if (++context._reCalcTimes > context.reCalcNums) { return true; } else {
+            return yield applyRecalc(pdcAccessorTag, calcRuleAccessorTag, context);
         }
 
-        var bases = ruleDesc.rule.bases;
-        var baseValues = [];
-        if (bases && bases.length > 0) { //pdc locked?  //是否考虑添加重入锁，否则这里要考虑释放lock
-            //先处理依赖项
-
-            for (let i = 0; i < bases.length; i++) {
-                var value = yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, bases[i]);
-                if (!value) {
-                    var err = { no: -1, desc: `calcRuleName=${base[i]} doesn't exist.` };
-                    throw (err);
-                }
-                baseValues.push(value);
-            }
-        }
-
-        function* applyRecalc(pdcAccessorTag, calcRuleAccessorTag, context) {
-            if (!context) { context = {} };
-            if (!context._reCalcTimes) { context._reCalcTimes = 0; }
-
-            var pdcAccessor = yield Accessor.findOne({ thisTag: pdcAccessorTag, version: sysConfig.version });
-            var calcRuleAccessor = yield Accessor.findOne({ thisTag: calcRuleAccessorTag, version: sysConfig.version });
-
-            var appliedPDCItems = yield PDCItem.find({ "tracer.ownerTag": pdcAccessor.thisTag, applyRecalc: true }).toArray();
-            if (appliedPDCItems.length === 0) { return true; }
-            var appliedNames = [];
-            for (let i = 0; i < appliedPDCItems.length; i++) {
-                appliedNames.push(appliedPDCItems[i].name);
-            }
-            for (let i = 0; i < appliedPDCItems; i++) {
-                let item = appliedPDCItems[i];
-                var depsItems = yield getCalcRuleDescriptor.find({ "tracer.ownerTag": calcRuleAccessor.thisTag, name: { $in: appliedNames }, "rule.base": item.name }).toArray();
-                for (let j = 0; j < depsItems.length; j++) {
-                    let depItem = depsItems[i];
-                    yield calcAndPublish(pdcAccessorTag, calcRuleAccessorTag, context)
-                }
-                item.applyRecalc = false;
-                yield item.save();
-            }
-
-            if (++context._reCalcTimes > context.reCalcNums) { return true; } else {
-                return yield applyRecalc(pdcAccessorTag, calcRuleAccessorTag, context);
-            }
-
-
+    };
+    //解析规则
+    function* parseCalcRule(ruleDesc) {
+        function* getValueByWebService(timetout) {
+            return null;
         };
         //解析规则
-        function* parseCalcRule(ruleDesc) {
-            //解析规则
-            var rOpers = /(.*)=(.*)/.exec(ruleDesc);
-            var value = 0;
-            switch (rOpers[1]) {
-                case "AS": //auto sum,自动求和
+        var rOpers = /(.*)=(.*)/.exec(ruleDesc);
+        var value = null;
+        switch (rOpers[1]) {
+            case "AS": //auto sum,自动求和
+                try {
                     value = _.sum(baseValues);
-                    break;
-                case "DN":
+                    return value;
+
+                } catch (e) {
+                    var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} autoSum wrong.` };
+                    throw (err);
+
+                }
+
+                break;
+            case "DN":
+                try {
                     value = parseFloat(rOpers[2]);
-                    break;
-                case "AF": // 以后公式可能很复杂，公式解析,暂时用公式 例如{{1}}* {{2}}单元测试
+                    if (value === Number.NaN) { //这里判断要注意返回是null 还是false，因为value 是可以等于false的。
+                        var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} is not a Number.` };
+                        throw (err);
+                    }
+                    return value;
+                } catch (e) {
+                    var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} parseFloat error.` };
+                    throw (err);
+                }
+
+                break;
+            case "AF": // 以后公式可能很复杂，公式解析,暂时用公式 例如{{1}}* {{2}}单元测试
+                try {
                     value = baseValues[0] * baseValues[1];
-                    break;
-                case /^WS/.test(rOpers[1]): //web service
-                    break;
-            }
-            return { err: null, value: value };
-        };
-        var parseResult = yield parseCalcRule(ruleDesc.rule.desc);
-        if (!parseResult) {
-            var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} parse value=null ` };
-            throw (err);
+                    if (value === null) { //这里判断要注意返回是null 还是false，因为value 是可以等于false的。
+                        var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} formula exec wrong.` };
+                        throw (err);
+
+                    }
+                    return value;
+
+                } catch (e) {
+
+                    var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} formula exec wrong.` };
+                    throw (err);
+
+                }
+
+                break;
+            case /^WS/.test(rOpers[1]): //web service
+                value = yield getValueByWebService(5000);
+
+                if (value === null) { //这里判断要注意返回是null 还是false，因为value 是可以等于false的。
+                    var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} web services timeout.` };
+                    throw (err);
+
+                }
+                return value;
+                break;
+            default:
+                var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} no matched algrithm.` };
+                throw (err);
+
         }
 
-        //再次查询是否加锁
-        //生成占用锁tag
-        var _pdcItem = null;
-        var oper = async(function*(context) {
-            _pdcItem = yield PDCItem.findOne({ name: calcRuleName, "tracer.ownerTag": pdcAccessorTag });
-            if (_pdcItem) { //是不是占用前已经被添加过了，如果已经有了该项，只是修改value值
-                if (Math.abs(_pdcItem.value - parseResult) > 0.0001) { //精度0.0001
-                    _pdcItem.value = parseResult;
-                    _pdcItem.applyRecalc = true; //依赖项是现在重新计算？还是提示手动，应该还是修改lastmodifed time，让后续模块自行判断。
-                    yield _pdcItem.save();
-                    yield applyRecalc(pdcAccessorTag, calcRuleAccessorTag, context);
-                    pdcAccessor.timemark.lastModified = Date.now();
-                    yield pdcAccessor.save();
-                    return true;
-                }
-            } else {
-                _pdcItem = new PDCItem();
-                _pdcItem.name = calcRuleName;
-                _pdcItem.value = parseResult.value;
-                _pdcItem.tracer.ownerTag = pdcAccessorTag;
-                yield _pdcItem.save(); //这里应该要查找一下是不是在创建时，已经有其他的任务已经添加了该item的计算item
+    };
+    var parseResult = yield parseCalcRule(ruleDesc.rule.desc);
+
+    var _pdcItem = null;
+    var oper = async(function*(context) {
+        _pdcItem = yield PDCItem.findOne({ name: calcRuleName, "tracer.ownerTag": pdcAccessorTag });
+        if (_pdcItem) { //是不是占用前已经被添加过了，如果已经有了该项，只是修改value值
+            if (Math.abs(_pdcItem.value - parseResult) > 0.0001) { //精度0.0001
+                _pdcItem.value = parseResult;
+                _pdcItem.applyRecalc = true; //依赖项是现在重新计算？还是提示手动，应该还是修改lastmodifed time，让后续模块自行判断。
+                yield _pdcItem.save();
+                yield applyRecalc(pdcAccessorTag, calcRuleAccessorTag, context);
+                pdcAccessor.timemark.lastModified = Date.now();
+                yield pdcAccessor.save();
                 return true;
             }
-        });
-        var success = yield dbMgr.holdLockAndOper(pdcAccessorTag, oper, context);
+        } else {
+            _pdcItem = new PDCItem();
+            _pdcItem.name = calcRuleName;
+            _pdcItem.value = parseResult;
+            _pdcItem.tracer.ownerTag = pdcAccessorTag;
+            yield _pdcItem.save(); //
+            return true;
+        }
+    });
+    var success = yield dbMgr.holdLockAndOper(pdcAccessorTag, oper, context);
 
 
-        if (success == true) {
-            return _pdcItem.value;
-        } else { return null; }
-    }
-};
+    if (success == true) {
+        return _pdcItem.value;
+    } else { return null; }
+}
+
 module.exports.getCalcRuleValueFromPDC = async(getCalcRuleValueFromPDC);

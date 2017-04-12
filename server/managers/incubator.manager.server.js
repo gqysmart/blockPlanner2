@@ -6,6 +6,7 @@
 
 const { respond } = require("../utils");
 const path = require("path");
+const _ = require("lodash");
 const { wrap: async } = require("co");
 const fs = require("fs");
 const mongoose = require("mongoose");
@@ -69,34 +70,45 @@ function* createIncubator(incubatorInfo, calcRuleAccessorTag, incubatorAccessorT
 function* transferRuleName2Category(ruleName) {
     return ruleName.toString();
 };
+module.exports.transferRuleName2Category = async(transferRuleName2Category);
+module.exports.getEnvironmentFromIncubator = async(getEnvironmentFromIncubator);
+
+function* getEnvironmentFromIncubator(incubator) {
+    return incubator.strategy.calcRuleAccessorTag.toString();
+}
 module.exports.getRecordFromIncubatorByRuleTerminologyTag = async(getRecordFromIncubatorByRuleTerminologyTag);
 
-function* getRecordFromIncubatorByRuleTerminologyTag(incubatorAccessorTag, incubatorName, ruleTerminologyTag) {
+function* getRecordFromIncubatorByRuleTerminologyTag(incubatorAccessorTag, incubatorName, ruleTerminologyTag, context) {
+
+    if (!context) { context = {} };
+    _.defaults(context, defaultCostHierarchyRecordOptons);
+
     var category = yield transferRuleName2Category(ruleTerminologyTag);
     var incubatorAccessor = yield Accessor.findOne({ thisTag: incubatorAccessorTag, version: sysConfig.version });
     var incubator = yield Incubator.findOne({ "tracer.ownerTag": incubatorAccessor.thisTag, name: incubatorName });
-    var environment = incubator.strategy.calcRuleAccessorTag.toString();
+    var environment = yield getEnvironmentFromIncubator(incubator);
     var existRecord = yield Record.findOne({
-        "tracer.owner": incubator.container.recordAccessorTag,
+        "tracer.ownerTag": incubator.container.recordAccessorTag,
         "record.category": category,
         "record.environment": environment
     });
     if (!existRecord) {
         //不存在重新计算，并record。,不需要二次查询。
-        var newRecord = yield laborAndRecord();
-        return newRecord.data;
+        existRecord = yield laborAndRecord();
+
+        return existRecord.record.data;
     } else {
         //存在查看记录时间和规则修改的时间，是否记录已经过时。
         var calcRuleAccessor = yield Accessor.findOne({ thisTag: incubator.strategy.calcRuleAccessorTag, version: sysConfig.version });
         if (existRecord.tracer.updatedTime < calcRuleAccessor.timemark.lastModified || existRecord.tracer.updatedTime < calcRuleAccessor.timemark.forwardUpdated) {
             //重新计算并记录
             //不存在重新计算，并record。,不需要二次查询。
-            var newRecord = yield laborAndRecord();
-            return newRecord.data;
+            existRecord = yield laborAndRecord();
+            return eexistRecord.record.data
 
         } else { //记录存在且最新，将记录返回。
             //查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
-            return existRecord.data;
+            return existRecord.record.data
         }
     }
 
@@ -106,8 +118,15 @@ function* getRecordFromIncubatorByRuleTerminologyTag(incubatorAccessorTag, incub
         var data = {
             body: content
         };
-        recordHierarchy(data, incubator.container.recordAccessorTag);
-    }
+        var record = yield recordMgr.record(data, category, environment, incubatorAccessorTag, incubatorName);
+        if (!record) {
+            var err = { no: -1, desc: `recordd errored.` }
+            throw (err);
+        }
+
+        return record;
+    };
+
 
 };
 //对于新建方案可以使用写时再复制的方法。第一个方案新建后，后面的方案都是对原方案的引用。
@@ -135,34 +154,17 @@ function* constructHierarchy(rootCalcRuleName, pdcAccessorTag, calcRuleAccessorT
         },
         calcRuleDes: calcRuleDescriptor.rule.desc,
         value: value,
-        children: []
+        bases: []
     };
     var bases = calcRuleDescriptor.rule.bases;
     for (let i = 0; i < bases.length; i++) {
         let childObject = yield constructHierarchy(bases[i], pdcAccessorTag, calcRuleAccessorTag, terminologyAccessorTag);
-        node.children.push(childObject);
+        node.bases.push(childObject);
     }
     return node;
 };
 
 const defaultCostHierarchyRecordOptons = {
-    category: "costClass",
     duration: 2 * 365, //unit is day，默认为2天
     style: "cover" //[cover,keep:n]
 }
-
-function* recordHierarchy(data, recordAccessorTag, options) {
-    if (!options) { options = {} };
-    _.defaults(options, defaultCostHierarchyRecordOptons);
-
-    var recordAccessor = yield recordMgr.record(data, options, recordAccessorTag);
-    if (!recordAccessor) {
-        var err = { no: -1, desc: `recordd errored.` }
-        throw (err);
-    }
-    return recordAccessor;
-
-
-}
-
-module.exports.recordCostHierarchy = async(recordHierarchy);

@@ -63,7 +63,7 @@ module.exports.loadCostInfo = function(req, res, next) {
         var incubator = yield incubatorMgr.createIncubator();
         var record = yield incubatorMgr.getRecordFromIncubatorByRuleTerminologyTag(incubator.tracer.ownerTag, incubator.name, nameTag);
 
-        res.end(record.toString());
+        res.json(record);
 
 
     })

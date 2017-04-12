@@ -89,7 +89,8 @@ function initIncubatorAccessor(accessor) {
 
 
 const defaultHoldOptions = {
-    maxLagTime: 1000 //一秒
+    maxLagTime: 1000, //一秒
+    async: false //同步执行，还是异步执行。异步的时候，会释放锁，所以建议同步执行。
 };
 /**
  * 
@@ -158,7 +159,11 @@ function* holdLockAndOper(targetAccessorTag, oper, context) { //调整到db.mana
         var promise = new Promise(function(resolve, reject) {
             co(function*() {
                 try {
-                    return oper(context);
+                    if (context.aysnc) {
+                        return oper(context);
+                    } else {
+                        return yield oper(context);
+                    }
 
                 } catch (e) {
                     throw (e);

@@ -6,22 +6,22 @@
                     <!-- Nested node template -->
                     <script type="text/ng-template" id="nodes_renderer.html">
                         <div ui-tree-handle class="tree-node tree-node-content">
-                            <a class="btn btn-success btn-xs" ng-if="node.childItems && node.childItems.length > 0" data-nodrag ng-click="toggle(this)"><span
+                            <a class="btn btn-success btn-xs" ng-if="node.bases && node.bases.length > 0" data-nodrag ng-click="toggle(this)"><span
         class="glyphicon"
         ng-class="{
           'glyphicon-chevron-right': collapsed,
           'glyphicon-chevron-down': !collapsed
-        }"></span></a>{{node.desc}} {{node.name}}
+        }"></span></a>{{node.name.qualified}}
                             <a class="pull-right btn btn-danger btn-xs" data-nodrag ng-click="remove(this)"><span
         >{{node.value}}</span></a>
 
                         </div>
-                        <ol ng-if="node.childItems" ui-tree-nodes="" ng-model="node.childItems" ng-class="{hidden: collapsed}">
-                            <li ng-repeat="node in node.childItems" ui-tree-node ng-include="'nodes_renderer.html'">
+                        <ol ng-if="node.bases && node.bases.length > 0" ui-tree-nodes="" ng-model="node.bases" ng-class="{hidden: collapsed}">
+                            <li ng-repeat="node in node.bases" ui-tree-node ng-include="'nodes_renderer.html'">
                             </li>
                         </ol>
-                        <ol ng-if="!node.childItems ||node.childItems.length ===0" ui-tree-nodes="" ng-model="node.required" ng-class="{hidden:collapsed}">
-                            <li ng-repeat="requiredItem in node.required" ui-tree-node ng-include="'required_renderer.html'"></li>
+                        <ol ng-if="!node.bases ||node.bases.length ===0" ui-tree-nodes="" ng-model="node.required" ng-class="{hidden:collapsed}">
+                            <li ui-tree-node>{{node.calcRuleDes}}</li>
                         </ol>
                     </script>
 

@@ -26,7 +26,7 @@
 
                 $http({ method: "GET", url: costInfoUrl }).then(
                     function(response) {
-                        planCostClassCache = response.data;
+                        planCostClassCache = [response.data.body];
                         if (cb) {
                             return cb(null, planCostClassCache);
                         }

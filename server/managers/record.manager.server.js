@@ -17,31 +17,23 @@ const CalcRuleDescriptor = mongoose.model("CalcRuleDescriptor");
 //const CalcRuleAccessor = mongoose.model("CalcRuleAccessor");
 const InitConfig = mongoose.model("InitConfig");
 const Accessor = mongoose.model("Accessor");
-const dbManager = require("./db.manager.server");
+const Record = mongoose.model("Record");
+const Incubator = mongoose.model("Incubator");
+const dbMgr = require("./db.manager.server");
+const incubatorMgr = require("./incubator.manager.server");
+
 
 const defaultRecordOptions = {
-    category: "default",
     duration: 2, //unit is day，默认为2天
-    style: "cover" //[cover,keep:n]
+    keeps: 1 //[cover,keep:n]
 };
 const MaxRecordDuration = 100 * 365; //最大缓存时间为100年
 
-function* recordInfo(data, options, recordAccessorTag, IncubatorTag) {
-    var recordAccessor = null;
-    if (!recordAccessorTag) {
-        var recordAccessor = new Accessor();
-        dbManager.initRecordAccessor(recordAccessor);
-        yield recordAccessor.save();
+function* recordInfo(data, category, environment, incubatorAccessorTag, incubatorTag, options) {
+    var incubatorAccessor = yield Accessor.findOne({ thisTag: incubatorAccessorTag, version: sysConfig.version });
+    var incubator = yield Incubator.findOne({ "tracer.ownerTag": incubatorAccessor.thisTag, name: incubatorTag });
+    var recordAccessor = yield Accessor.findOne({ thisTag: incubator.container.recordAccessorTag, version: sysConfig.version });
 
-    } else {
-        var recordAccessor = yield Accessor.findOne({ thisTag: recordAccessorTag, version: sysConfig.version });
-        if (!recordAccessor) { //如果record为空，那么accessor 自动被删除掉。
-            var recordAccessor = new Accessor();
-            dbManager.initRecordAccessor(recordAccessor);
-            yield recordAccessor.save();
-        }
-
-    }
 
     if (!options) { options = {} };
     _.defaults(options, defaultRecordOptions);
@@ -49,62 +41,59 @@ function* recordInfo(data, options, recordAccessorTag, IncubatorTag) {
         var err = { no: -1, desc: `oops,excess the max duration ${MaxRecordDuration}` };
         throw (err);
     }
-    switch (options.style) {
-        case "cover":
-            var newRecord = yield Record.findOne({ "tracer.ownerTag": recordAccessor.thisTag, "record.category": options.category });
-            if (newRecord) {
-                newRecord.record.data = data;
-                newRecord.maintain.duration = options.duration
-                newRecord.tracer.ownerTag = recordAccessor.thisTag;
-                newRecord.tracer.updatedTime = Date.now();
-                newRecord.markModified("data");
-                newRecord.save();
+    var recordCriteria = { "tracer.ownerTag": recordAccessor.thisTag, "record.category": category, "record.environment": environment };
 
-            } else {
-                newRecord = new Record();
-                newRecord.record.category = options.category;
-                newRecord.record.data = data;
-
-                newRecord.maintain.duration = options.duration
-                newRecord.tracer.ownerTag = recordAccessor.thisTag;
-                yield newRecord.save();
-            }
-
-            break;
-
-        case /keep:/:
-            var rKeeps = (/keep:([0-9]+)/).exec(options.style);
-            var nums = rKeeps[1];
-            var recordNums = yield Record.find({ "tracer.ownerTag": recordAccessor.thisTag, "record.category": options.category }).count();
-            if (recordNums >= nums) {
-                var last = yield Record.find({ "tracer.ownerTag": recordAccessor.thisTag, "record.category": options.category }).sort({ "tracer.updatedTime": 1 }).limit(1).exec();
-                last.record.data = data;
-                last.maintain.duration = options.duration
-                last.tracer.ownerTag = recordAccessor.thisTag;
-                last.tracer.updatedTime = Date.now();
-                last.markModified("data");
-                last.save();
-
-            } else {
-
-                newRecord = new Record();
-                newRecord.record.category = options.category;
-                newRecord.record.data = data;
-
-                newRecord.maintain.duration = options.duration
-                newRecord.tracer.ownerTag = recordAccessor.thisTag;
-                yield newRecord.save();
-            }
-
-            break;
-
-
-    }
+    var context = {};
+    var resultRecord = null;
+    yield doUpdateRecords();
 
     recordAccessor.timemark.lastModified = Date.now();
     yield recordAccessor.save();
+    return resultRecord;
 
-    return recordAccessor.toObject();
+
+    function* doUpdateRecords() {
+        var environment = yield incubatorMgr.getEnvironmentFromIncubator(incubator);
+        yield dbMgr.holdLockAndOper(recordAccessor.thisTag, async(function*(context) {
+            var nums = options.keeps;
+            var recordNums = yield Record.find(recordCriteria).count();
+            if (recordNums >= nums) {
+                var invalidRecordsNums = recordNums - nums + 1;
+
+                var invalidRecords = yield Record.find(recordCriteria).sort({ "tracer.updatedTime": 1 }).limit(invalidRecordsNums).exec();
+                var last = invalidRecords[invalidRecordsNums - 1];
+                if (invalidRecords.length > 1) { //update effiency is better than insert.
+                    var needRemovedCriteria = { "tracer.updatedTime": { $lt: last.tracer.updatedTime } };
+                    _.defaults(needRemovedCriteria, recordCriteria);
+                    yield Record.remove(needRemovedCriteria);
+                }
+                last.record.data = data;
+                last.maintain.duration = options.duration
+                last.tracer.ownerTag = recordAccessor.thisTag;
+                newRecord.record.data = data;
+                last.tracer.updatedTime = Date.now();
+                last.markModified("data");
+                last.save();
+                resultRecord = last;
+
+            } else {
+
+                var newRecord = new Record();
+                newRecord.record.category = category;
+                newRecord.record.environment = environment;
+                newRecord.record.data = data;
+
+                newRecord.maintain.duration = options.duration
+                newRecord.tracer.ownerTag = recordAccessor.thisTag;
+                yield newRecord.save();
+                resultRecord = newRecord;
+            }
+
+        }), context);
+
+
+
+    }
 }
 
 module.exports.record = async(recordInfo);
