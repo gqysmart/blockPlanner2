@@ -39,18 +39,18 @@ function* createIncubator(incubatorInfo, calcRuleAccessorTag, incubatorAccessorT
     var newincubator = new Incubator(incubatorInfo);
     if (!incubatorAccessorTag) {
         var incubatorAccessor = new Accessor();
-        dbMgr.initIncubatorAccessor(incubatorAccessor);
+        yield dbMgr.initIncubatorAccessor(incubatorAccessor);
         yield incubatorAccessor.save();
         incubatorAccessorTag = incubatorAccessor.thisTag;
     }
     newincubator.tracer.ownerTag = incubatorAccessorTag;
     //
     var pdcAccessor = new Accessor();
-    dbMgr.initPDCAccessor(pdcAccessor);
+    yield dbMgr.initPDCAccessor(pdcAccessor);
     yield pdcAccessor.save();
 
     var recordAccessor = new Accessor();
-    dbMgr.initRecordAccessor(recordAccessor);
+    yield dbMgr.initRecordAccessor(recordAccessor);
     yield recordAccessor.save();
 
     if (!calcRuleAccessorTag) {

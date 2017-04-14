@@ -24,17 +24,20 @@ const Schema = mongoose.Schema;
  */
 
 const PDCItemSchema = new Schema({
-    name: { type: Schema.Types.ObjectId, required: true }, //calcrule 可能会根据类别通过ownertag分类存储calc规则。
+    name: { type: String, required: true }, //calcrule 可能会根据类别通过ownertag分类存储calc规则。
     value: Number,
     //直接数的改变是修改的calcruledesc，recalc需要计算自己以及associated，可能是规则变了，依赖变了,申请重新计算自己 以及依赖
     applyRecalc: { type: Boolean }, //recalc时，所有喊有此项required的，都应重新计算
     tracer: {
-        ownerTag: { type: Schema.Types.ObjectId, required: true } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
+        updatedTime: { type: Date, default: Date.now }, //创建和修改后的时间。
+        ownerTag: { type: String, required: true } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
     }
 });
 
 
 //create query index
+//covered 重要的类型，cover查询
+PDCItemSchema.index({ "tracer.ownerTag": 1, name: 1 }, { unique: true });
 PDCItemSchema.index({ "tracer.ownerTag": 1, name: 1, applyRecalc: 1, value: 1 });
 
 mongoose.model('PDCItem', PDCItemSchema);

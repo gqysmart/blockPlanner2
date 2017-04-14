@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 const ObjectID = require("mongoDB").ObjectID;
 const sysConfig = require("../config/sys.js");
 const version = sysConfig.version;
-const dbManager = require("./db.manager.server");
+const dbMgr = require("./db.manager.server");
 
 
 //
@@ -18,7 +18,7 @@ const Accessor = mongoose.model("Accessor");
 var systemLogAccessor;
 // function* createLogAccessor() {
 //     var logAccessor = new Accessor();
-//     dbManager.initAccessor(logAccessor);
+//     dbMgr.initAccessor(logAccessor);
 
 //     logAccessor.special = { logLevel: 7 };
 //     yield logAccessor.save();

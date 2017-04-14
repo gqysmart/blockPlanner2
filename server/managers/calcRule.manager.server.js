@@ -18,6 +18,7 @@ const CalcRuleDescriptor = mongoose.model("CalcRuleDescriptor");
 const InitConfig = mongoose.model("InitConfig");
 const Accessor = mongoose.model("Accessor");
 const dbMgr = require("./db.manager.server");
+const exceptionMgr = require("./exception.manager.server");
 const rootCalcRuleAccessorTagCfgCriteria = dbMgr.rootCalcRuleAccessorTagCfgCriteria
 
 
@@ -237,7 +238,7 @@ function* createCalcRules(sourceRuleAccessorTag, options) {
 
     function* createCalcRuleByCopy() {
         var aRuleAccessor = new Accessor();
-        dbMgr.initCalcRuleAccessor(aRuleAccessor);
+        yield dbMgr.initCalcRuleAccessor(aRuleAccessor);
         aRuleAccessor.proto.forward = sourceRuleAccessorTag;
         aRuleAccessor.timemark.forward = Date.now();
         yield aRuleAccessor.save();
@@ -251,7 +252,7 @@ function* createCalcRules(sourceRuleAccessorTag, options) {
 
     function* createCalcRuleByProto() {
         var aRuleAccessor = new Accessor();
-        dbMgr.initCalcRuleAccessor(newRuleAccessor);
+        yield dbMgr.initCalcRuleAccessor(newRuleAccessor);
 
         aRuleAccessor.proto.forward = sourceRuleAccessorTag;
         aRuleAccessor.timemark.forwardUpdated = Date.now();
@@ -263,27 +264,3 @@ function* createCalcRules(sourceRuleAccessorTag, options) {
 
 };
 module.exports.createCalcRules = async(createCalcRules);
-module.exports.getCalcRuleDescriptor = async(getCalcRuleDescriptor);
-
-function* getCalcRuleDescriptor(calcRuleAccessorTag, ruleName) {
-    var calcRuleAccessor = yield Accessor.findOne({ thisTag: calcRuleAccessorTag, version: sysConfig.version });
-    var ruleDes = null;
-    while (calcRuleAccessor) {
-        let ownerTag = calcRuleAccessor.thisTag;
-        let sourceAccessorTag = calcRuleAccessor.proto.forward;
-
-        ruleDes = yield CalcRuleDescriptor.findOne({ "tracer.ownerTag": ownerTag, name: ruleName });
-
-        if (!ruleDes) {
-            calcRuleAccessor = yield Accessor.findOne({ thisTag: sourceAccessorTag, version: sysConfig.version });
-            continue;
-        }
-        break;
-    }
-    if (ruleDes) {
-        return ruleDes;
-    } else {
-        var err = { no: -1, desc: `calcruleName=${ruleName} and accessor=${calcRuleAccessorTag} hasn't found ruledescriptor` };
-        throw (err);
-    }
-};

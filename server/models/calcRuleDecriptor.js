@@ -20,10 +20,10 @@ const Schema = mongoose.Schema;
  * user schema
  */
 
-const CalcRuleDescriptorSchema = new Schema({
-    name: { type: Schema.Types.ObjectId, required: true }, //CalcRuleAccessor 可能会根据类别通过ownertag分类存储calc规则。
+const calcRuleDescriptorSchema = new Schema({
+    name: { type: String, required: true }, //CalcRuleAccessor 可能会根据类别通过ownertag分类存储calc规则。
     rule: {
-        bases: [Schema.Types.ObjectId],
+        bases: [String], //baseRules name
         desc: String,
         markdown: { en: String, cn: String } //出文本用
     },
@@ -36,9 +36,12 @@ const CalcRuleDescriptorSchema = new Schema({
 
 //create query index
 //查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
+calcRuleDescriptorSchema.index({ "tracer.ownerTag": 1, name: 1 }, { unique: true });
+calcRuleDescriptorSchema.index({ "tracer.ownerTag": 1, name: 1, "tracer.updatedTime": 1, "rule.bases": 1 }); //cover query
 
 
-mongoose.model('CalcRuleDescriptor', CalcRuleDescriptorSchema);
+
+mongoose.model('CalcRuleDescriptor', calcRuleDescriptorSchema);
 
 // /**
 //  *

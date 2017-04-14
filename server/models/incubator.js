@@ -18,18 +18,18 @@ const Schema = mongoose.Schema;
  */
 
 const incubatorSchema = new Schema({
-    name: { type: Schema.Types.ObjectId, require: true },
+    name: { type: String, require: true },
     desc: { type: String },
     tags: [String],
     tracer: {
-        ownerTag: { type: Schema.Types.ObjectId }, //ref id incubatorAccessorTag
+        ownerTag: { type: String }, //ref id incubatorAccessorTag
     },
     strategy: {
-        calcRuleAccessorTag: { type: Schema.Types.ObjectId, require: true },
+        calcRuleAccessorTag: { type: String, require: true },
     },
     container: {
-        PDCAccessorTag: { type: Schema.Types.ObjectId, require: true },
-        recordAccessorTag: { type: Schema.Types.ObjectId, require: true },
+        PDCAccessorTag: { type: String, require: true },
+        recordAccessorTag: { type: String, require: true }
 
     }
 
@@ -37,6 +37,13 @@ const incubatorSchema = new Schema({
 
 //查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
 
-incubatorSchema.index({ "tracer.ownerTag": 1 });
+incubatorSchema.index({ "tracer.ownerTag": 1, name: 1 }, { unique: true }); //查询是否存在？
+incubatorSchema.index({
+    "tracer.ownerTag": 1,
+    name: 1,
+    "container.PDCAccessorTag": 1,
+    "container.recordAccessorTag": 1,
+    "strategy.calcRuleAccessorTag": 1
+}); //cover 查询
 
 mongoose.model('Incubator', incubatorSchema);

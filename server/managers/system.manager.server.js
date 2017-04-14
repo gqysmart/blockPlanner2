@@ -17,7 +17,7 @@ const MongoClient = require("mongoDB").MongoClient;
 const systemDbConnectString = sysConfig.systemdb.connectString;
 const appDbConnectString = sysConfig.appdb.connectString;
 const models = path.join(__dirname, "..", "models");
-const dbManager = require("./db.manager.server");
+const dbMgr = require("./db.manager.server");
 const logManager = require("./log.manager.server");
 
 //
@@ -38,10 +38,10 @@ const Terminology = mongoose.model("Terminology");
 const CalcRuleDescriptor = mongoose.model("CalcRuleDescriptor");
 
 //
-const initedCfgCriteria = dbManager.sysinitedCfgCriteria;
-const rootCalcRuleIDCfgCriteria = dbManager.rootCalcRuleAccessorTagCfgCriteria;
-const terminologyAccessorTagCriteria = dbManager.terminologyAccessorTagCfgCriteria;
-const systemLogAccessorTagCfgCriteria = dbManager.sysinitedCfgCriteria;
+const initedCfgCriteria = dbMgr.sysinitedCfgCriteria;
+const rootCalcRuleIDCfgCriteria = dbMgr.rootCalcRuleAccessorTagCfgCriteria;
+const terminologyAccessorTagCriteria = dbMgr.terminologyAccessorTagCfgCriteria;
+const systemLogAccessorTagCfgCriteria = dbMgr.sysinitedCfgCriteria;
 
 //
 module.exports.init = async(function*(cb) {
@@ -85,7 +85,7 @@ function* initCalcRuleDB() {
         var db = yield MongoClient.connect(systemDbConnectString);
         var sysRules = yield db.collection(costCalRules).find().toArray();
         var originRule = new Accessor();
-        dbManager.initCalcRuleAccessor(originRule);
+        yield dbMgr.initCalcRuleAccessor(originRule);
         yield originRule.save();
         for (let i = 0; i < sysRules.length; i++) {
             var sysrule = sysRules[i];
@@ -112,7 +112,7 @@ function* initCalcRuleDB() {
 
 function* initSystemLog() {
     var logAccessor = new Accessor();
-    dbManager.initLogAccessor(logAccessor);
+    yield dbMgr.initLogAccessor(logAccessor);
     yield logAccessor.save();
 
     var logCfg = new InitConfig(systemLogAccessorTagCfgCriteria);
@@ -128,7 +128,7 @@ function* initTerminologyDB() {
         var db = yield MongoClient.connect(systemDbConnectString);
         var systerms = yield db.collection(termCollection).find().toArray();
         var termAccessor = new Accessor();
-        dbManager.initTerminologyAccessor(termAccessor);
+        yield dbMgr.initTerminologyAccessor(termAccessor);
         yield termAccessor.save();
 
         for (let i = 0; i < systerms.length; i++) {
