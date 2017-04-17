@@ -24,7 +24,8 @@ var termID = gcTermID;
 // }
 
 function getNameNo(name) {
-    return new ObjectID();
+    var nameID = new ObjectID();
+    return nameID.toString();
 }
 
 var termGC = {

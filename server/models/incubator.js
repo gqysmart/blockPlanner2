@@ -38,12 +38,21 @@ const incubatorSchema = new Schema({
 //查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
 
 incubatorSchema.index({ "tracer.ownerTag": 1, name: 1 }, { unique: true }); //查询是否存在？
-incubatorSchema.index({
+const coreProject = {
     "tracer.ownerTag": 1,
     name: 1,
     "container.PDCAccessorTag": 1,
     "container.recordAccessorTag": 1,
     "strategy.calcRuleAccessorTag": 1
-}); //cover 查询
+};
+const coveredIndex = {
+    "tracer.ownerTag": 1,
+    name: 1,
+    "container.PDCAccessorTag": 1,
+    "container.recordAccessorTag": 1,
+    "strategy.calcRuleAccessorTag": 1
+};
+incubatorSchema.index(coveredIndex); //cover 查询
 
-mongoose.model('Incubator', incubatorSchema);
+var Incubator = mongoose.model('Incubator', incubatorSchema);
+Incubator.coreProject = coreProject;

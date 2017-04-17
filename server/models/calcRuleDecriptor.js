@@ -29,19 +29,23 @@ const calcRuleDescriptorSchema = new Schema({
     },
     tracer: {
         updatedTime: { type: Date, default: Date.now }, //创建和修改后的时间。
-        ownerTag: { type: Schema.Types.ObjectId, required: true } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
+        ownerTag: { type: String, required: true } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
     }
 });
 
 
 //create query index
 //查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
+const coreProject = { "tracer.ownerTag": 1, name: 1, "tracer.updatedTime": 1, "rule.bases": 1, "rule.desc": 1 };
+const coveredIndex = { "tracer.ownerTag": 1, name: 1, "tracer.updatedTime": 1, "rule.bases": 1, "rule.desc": 1 };
+
 calcRuleDescriptorSchema.index({ "tracer.ownerTag": 1, name: 1 }, { unique: true });
-calcRuleDescriptorSchema.index({ "tracer.ownerTag": 1, name: 1, "tracer.updatedTime": 1, "rule.bases": 1 }); //cover query
+calcRuleDescriptorSchema.index(coveredIndex); //cover query
 
 
 
-mongoose.model('CalcRuleDescriptor', calcRuleDescriptorSchema);
+var CalcRuleDescriptor = mongoose.model('CalcRuleDescriptor', calcRuleDescriptorSchema);
+CalcRuleDescriptor.coreProject = coreProject;
 
 // /**
 //  *

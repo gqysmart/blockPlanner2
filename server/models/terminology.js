@@ -16,12 +16,12 @@ const Schema = mongoose.Schema;
  */
 
 const terminologySchema = new Schema({
-    name: { type: Schema.Types.ObjectId }, //实际使用时一般为objectid，
-    parentName: { type: Schema.Types.ObjectId },
+    name: { type: String }, //实际使用时一般为objectid，
+    parentName: { type: String },
     desc: { en: String, cn: String },
     link: String, //说明的超链接
     tracer: {
-        ownerTag: { type: Schema.Types.ObjectId },
+        ownerTag: { type: String },
     },
     aliasName: [{}]
 });

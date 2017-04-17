@@ -171,7 +171,7 @@ function* collapseTo(accessorTag, toProtoAccessorTag) {
         var rootRuleAccessorTagCfg = yield InitConfig.findOne(rootCalcRuleAccessorTagCfgCriteria);
         toProtoAccessorTag = rootRuleAccessorTagCfg.value;
     }
-    var isInChain = yield dbMgr.isProtoOf(toProtoAccessorTag, accessorTag);
+    var isInChain = yield dbMgr.accessor.isProtoOf(toProtoAccessorTag, accessorTag);
     if (!isInChain) {
         return true; //不做修改
     }

@@ -42,6 +42,7 @@ const initedCfgCriteria = dbMgr.sysinitedCfgCriteria;
 const rootCalcRuleIDCfgCriteria = dbMgr.rootCalcRuleAccessorTagCfgCriteria;
 const terminologyAccessorTagCriteria = dbMgr.terminologyAccessorTagCfgCriteria;
 const systemLogAccessorTagCfgCriteria = dbMgr.sysinitedCfgCriteria;
+const rootAccessorTagCfgCriteria = dbMgr.rootAccessorTagCfgCriteria;
 
 //
 module.exports.init = async(function*(cb) {
@@ -49,6 +50,7 @@ module.exports.init = async(function*(cb) {
     var initedCfg = yield InitConfig.findOne(initedCfgCriteria);
     if (!initedCfg) {
         try {
+            yield co(initProtoChain());
             yield co(initSystemLog()); //1
             yield co(initTerminologyDB());
             yield co(initCalcRuleDB());
@@ -77,6 +79,15 @@ module.exports.init = async(function*(cb) {
 
 //
 
+function* initProtoChain() {
+    var rootAccessor = yield dbMgr.newNullAccessor();
+    rootAccessor.category = "ROOT";
+
+    var rootAccessorTagCfg = new InitConfig(rootAccessorTagCfgCriteria);
+    rootAccessorTagCfg.value = rootAccessor.thisTag;
+    yield rootAccessorTagCfg.save();
+    yield rootAccessor.save();
+};
 
 function* initCalcRuleDB() {
 
@@ -97,7 +108,6 @@ function* initCalcRuleDB() {
             tmpRule.tracer.ownerTag = originRule.thisTag;
             yield tmpRule.save();
         }
-        yield originRule.save();
 
         rootCalcRuleIDCfg = new InitConfig(rootCalcRuleIDCfgCriteria);
         rootCalcRuleIDCfg.value = originRule.thisTag;

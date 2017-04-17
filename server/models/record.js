@@ -33,7 +33,7 @@ const recordSchema = new Schema({
     },
     tracer: {
         updatedTime: { type: Date, default: Date.now }, //创建和修改后的时间。
-        ownerTag: { type: Schema.Types.ObjectId, required: true } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
+        ownerTag: { type: String, required: true } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
     },
     maintain: {
         duration: { type: Number, min: 1, max: 100 * 365, default: 2 }, //2days, 最大100年

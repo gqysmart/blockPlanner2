@@ -141,7 +141,7 @@ var costCalRuleList2 = [{
         name: "江苏嘉城/成本/项目总成本",
         computeRule: {
             bases: ["江苏嘉城/成本/开发成本", "江苏嘉城/成本/期间费用", "江苏嘉城/成本/不含税费总投资", "江苏嘉城/成本/开发期间税费", "江苏嘉城/成本/返还费用"],
-            desc: "AS=", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
+            desc: "AS==", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
             markdown: {
                 cn: "由子级自动计算",
                 en: "auto Sum"
@@ -151,7 +151,7 @@ var costCalRuleList2 = [{
         name: "江苏嘉城/成本/开发成本",
         computeRule: {
             bases: [],
-            desc: "DN= 10", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
+            desc: "DN=10=0", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
             markdown: {
                 cn: "由子级自动计算",
                 en: "auto Sum"
@@ -161,7 +161,7 @@ var costCalRuleList2 = [{
         name: "江苏嘉城/成本/期间费用",
         computeRule: {
             bases: [],
-            desc: "DN= 10", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
+            desc: "DN=10=0", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
             markdown: {
                 cn: "由子级自动计算",
                 en: "auto Sum"
@@ -171,7 +171,7 @@ var costCalRuleList2 = [{
         name: "江苏嘉城/成本/不含税费总投资",
         computeRule: {
             bases: [],
-            desc: "DN= 10", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
+            desc: "DN=10=0", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
             markdown: {
                 cn: "由子级自动计算",
                 en: "auto Sum"
@@ -181,7 +181,7 @@ var costCalRuleList2 = [{
         name: "江苏嘉城/成本/开发期间税费",
         computeRule: {
             bases: [],
-            desc: "DN= 10", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
+            desc: "DN=10=0", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
             markdown: {
                 cn: "由子级自动计算",
                 en: "auto Sum"
@@ -191,7 +191,7 @@ var costCalRuleList2 = [{
         name: "江苏嘉城/成本/返还费用",
         computeRule: {
             bases: [],
-            desc: "DN= 10", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
+            desc: "DN=10=0", // AS= autoSum 子集自动求和；$0为自动求和结果.WS=web service ,$0 为网络服务返回的值，$1为依赖项1，$n为依赖项n；=表示需要计算，；# directNum
             markdown: {
                 cn: "由子级自动计算",
                 en: "auto Sum"
