@@ -48,7 +48,6 @@ function* qualifiedName2TerminologyTag(qName, terminologyAccessorTag, options) {
                 parentName: null
             });
             break;
-
     }
 
     if (!rootterm) {
@@ -104,6 +103,14 @@ function* terminologyTag2QualifiedName(terminologyTag, terminologyAccessorTag, o
     return qualifiedName.slice(0, qualifiedName.length - 1);
 
 
+
+
+}
+
+
+//refactory
+
+function* createTerminology(accessorTag, name) {
 
 
 }

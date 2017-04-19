@@ -290,9 +290,7 @@ function* getAccessorEditableOnlyCategoryWithoutAssert(accessorTag) {
     return accessor;
 };
 
-function* getItemCoreInAccessor(accessorTag, criteria) {
 
-};
 
 //return itemreference
 function* firstNItemEditableInAccessor(accessorTag, num, sort, criteria) {
@@ -362,67 +360,6 @@ function* getAccessorInEditableOnlyProtoWithAssertWithThrow(accessorTag) {
     delete accessor._id;
     return accessor;
 };
-
-// function* getAccessorEditableOnlyProtoWithAssertWithThrow(accessorTag) {
-//     try {
-//         var accessor = yield getAccessorOnlyProtoWithAssertWithThrow(accessorTag);
-//         return accessor;
-//     } catch (e) {
-//         if (e.no === exceptionMgr.accessorNotExistException) {
-//             return null;
-//         } else {
-//             throw (e);
-//         }
-//     }
-// };
-/**
- * 
- * 
- * pdcItem
- */
-
-// module.exports.PDCItem = {
-//     getPDCItemCoreEditable: async(getPDCItemCoreEditableWithAssertWithThrow),
-//     getPDCItemCoreEditableWithAssertWithThrow: async(getPDCItemCoreEditableWithAssertWithThrow),
-//     getPDCItemcoreInEditable: async(getPDCItemCoreInEditableWithAssertWithThrow),
-//     getPDCItemCoreInEditableWithAssertWithThrow: async(getPDCItemCoreInEditableWithAssertWithThrow),
-//     getNewPDCItemEditable: async(getNewPDCItemEditable)
-// }
-
-// function* getNewPDCItemEditable() {
-//     var newPDCItem = new PDCItem();
-//     return newPDCItem;
-// }
-
-// function* getPDCItemCoreEditableWithAssertWithThrow(pdcAccessorTag, ruleName) {
-//     yield assertAccessorExist(pdcAccessorTag);
-//     var pdcItem = yield PDCItem.findOne({ "tracer.ownerTag": pdcAccessorTag, name: ruleName }, {
-//         "tracer.ownerTag": 1,
-//         name: 1,
-//         applyRecalc: 1,
-//         value: 1
-//     });
-//     if (!pdcItem) {
-//         return null;
-//     }
-//     return pdcItem;
-
-// };
-
-
-// function* getPDCItemCoreInEditableWithAssertWithThrow(pdcAccessorTag, ruleName) {
-//     var pdcItem = yield getPDCItemCoreEditable(pdcAccessorTag, ruleName);
-//     if (pdcItem) {
-//         return delete pdcItem._id;
-//     }
-//     return null;
-
-// }
-
-/**
- * 
- * 
- */
 
 
 /**
@@ -502,21 +439,7 @@ module.exports.ruleDescriptor = {
 
 
 
-// function* getRuleDescriptorCoreEditableWithAssertWithoutThrow(ruleAccessorTag, ruleName) {
-//     try {
-//         var ruleDesc = yield getRuleDescriptorCoreEditableWithAssertWithThrow(ruleAccessorTag, ruleName);
-//     } catch (e) {
-//         switch (e.no) {
-//             case exceptionMgr.accessorNotExistException:
-//             case exceptionMgr.ruleNotExistException:
-//                 //do someting.
-//                 return null;
-//                 break;
-//             default:
-//                 return null;
-//         }
-//     }
-// };
+
 
 function* getRuleDescriptorCoreInEditableWithAssertWithThrow(ruleAccessorTag, ruleName) {
     var ruleDesc = yield getRuleDescriptorCoreEditableWithAssertWithThrow(ruleAccessorTag, ruleName);
@@ -888,5 +811,6 @@ module.exports.itemsCountInAccessorWithThrow = async(itemsCountInAccessorWithThr
 module.exports.keepItemsCountInAccessorBelowWithThrow = async(keepItemsCountInAccessorBelowWithThrow);
 module.exports.newItemEditableInAccessorWithThrow = async(newItemEditableInAccessorWithThrow);
 module.exports.theOneItemCoreReadOnlyInProtoAccessorWithThrow = async(theOneItemCoreReadOnlyInProtoAccessorWithThrow);
+module.exports.theOneItemEditableInAccessorWithThrow = async(theOneItemEditableInAccessorWithThrow);
 module.exports.newNullAccessor = async(newNullAccessorEditable);
 module.exports.newAccessorEditable = async(newAccessorEditable);

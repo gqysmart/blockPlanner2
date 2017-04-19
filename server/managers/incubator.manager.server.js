@@ -367,7 +367,7 @@ function* getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, 
                                 var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} is not a Number.` };
                                 throw (err);
                             }
-                            PDCItem["i0"] = initValue;
+                            PDCItem["value"] = initValue;
                         }
                         _PDC[ruleName] = PDCItem;
                     }
@@ -387,8 +387,8 @@ function* getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, 
                         var existBaseRule = _PDC[baseName];
                         if (existBaseRule) {
                             if (existBaseRule.status === 0) { //反向依赖；正处于挂起状态
-                                if (existBaseRule.i0) {
-                                    baseValues[i] = existBaseRule.i0;
+                                if (existBaseRule.value) {
+                                    baseValues[i] = existBaseRule.value;
                                 } else {
                                     baseValues[i] = context.$_i0;
                                 }

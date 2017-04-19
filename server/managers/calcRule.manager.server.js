@@ -209,58 +209,33 @@ function* collapseTo(accessorTag, toProtoAccessorTag) {
 
 
 
-
-
-function* createCalcRules(sourceRuleAccessorTag, options) {
-
+function* createCalcRules(sourceRuleAccessorTag) {
     //参数调整
-    if (!options) { options = {} };
-    options = _.defaults(options, defaultCreateOptions);
     if (!sourceRuleAccessorTag) {
         var sourceRuleAccessorTagCfg = yield InitConfig.findOne(dbMgr.rootCalcRuleAccessorTagCfgCriteria);
         sourceRuleAccessorTag = sourceRuleAccessorTagCfg.value;
     }
     //copy，dependence等等。
     //
-    var newRuleAccessor = null;
-    switch (options.type) {
-        case "copy":
-            newRuleAccessor = yield co(createCalcRuleByCopy());
-            break;
-        case "proto":
-            newRuleAccessor = yield co(createCalcRuleByProto());
-            break;
+    var newRuleAccessor = yield dbMgr.newAccessorEditable("RULE", sourceRuleAccessorTag);
 
-        default:
-            newRuleAccessor = null;
-    }
-    return newRuleAccessor;
-
-    function* createCalcRuleByCopy() {
-        var aRuleAccessor = new Accessor();
-        yield dbMgr.initCalcRuleAccessor(aRuleAccessor);
-        aRuleAccessor.proto.forward = sourceRuleAccessorTag;
-        aRuleAccessor.timemark.forward = Date.now();
-        yield aRuleAccessor.save();
-
-        yield collapseTo(aRuleAccessor.thisTag);
-
-        aRuleAccessor = yield Accessor.findOne({ thisTag: aRuleAccessor.thisTag, version: sysConfig.version }); //重新更新一次。
-
-        return aRuleAccessor;
-    };
-
-    function* createCalcRuleByProto() {
-        var aRuleAccessor = new Accessor();
-        yield dbMgr.initCalcRuleAccessor(newRuleAccessor);
-
-        aRuleAccessor.proto.forward = sourceRuleAccessorTag;
-        aRuleAccessor.timemark.forwardUpdated = Date.now();
-        yield aRuleAccessor.save();
-
-        return aRuleAccessor;
-    };
-
-
+    return newRuleAccessor.save();
 };
+
 module.exports.createCalcRules = async(createCalcRules);
+
+
+const objectNamePrefix = "G";
+
+function* ruleDefine2TerminologyAndRuleDescriptor(accessorTag, ruleDefine) {
+    var _nameCn = ruleDefine.name;
+    var _formula = ruleDefine.formula;
+    var _bases = ruleDefine.bases;
+
+    function* parseNameCn(nameCn) {
+
+
+    }
+
+
+}
