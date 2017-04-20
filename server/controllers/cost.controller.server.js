@@ -52,16 +52,21 @@ module.exports.loadCostInfo = function(req, res, next) {
     // };
     co(function*() {
 
-        var rootRuleName = "江苏嘉城/成本/项目总成本";
+        var rootRuleName = "江苏嘉城/成本/产品/住宅/多层住宅/建筑安装工程费";
         var terminologyAccessorTagCfg = yield InitConfig.findOne(dbMgr.terminologyAccessorTagCfgCriteria);
         var tranferOptions = {
             lan: "cn",
-            delimiter: "/"
         };
-        var nameTag = yield terminologyMgr.qualifiedName2TerminologyTag(rootRuleName, terminologyAccessorTagCfg.value, tranferOptions);
+        var record = null;
+        try {
+            var nameTag = yield terminologyMgr.qualifiedName2TerminologyTagWithThrow(rootRuleName, terminologyAccessorTagCfg.value, tranferOptions);
+            var incubator = yield incubatorMgr.createIncubator();
+            var record = yield incubatorMgr.getRecordFromIncubatorByRuleTerminologyTag(incubator.tracer.ownerTag, incubator.name, nameTag);
 
-        var incubator = yield incubatorMgr.createIncubator();
-        var record = yield incubatorMgr.getRecordFromIncubatorByRuleTerminologyTag(incubator.tracer.ownerTag, incubator.name, nameTag);
+        } catch (e) {
+            throw e;
+        }
+
 
         res.json(record);
 

@@ -26,11 +26,11 @@ const incubatorSchema = new Schema({
     },
     strategy: {
         calcRuleAccessorTag: { type: String, require: true },
+        terminologyAccessorTag: { type: String }
     },
     container: {
         PDCAccessorTag: { type: String, require: true },
         recordAccessorTag: { type: String, require: true }
-
     }
 
 });

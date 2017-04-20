@@ -126,7 +126,6 @@ function* initCalcRuleAccessor(accessor) {
 function* initTerminologyAccessor(accessor) {
     yield co(initAccessor(accessor));
     accessor.category = "TERMINOLOGY"; //status: OK,COMPUTING,
-
 }
 
 function* initIncubatorAccessor(accessor) {
@@ -535,6 +534,12 @@ function* category2ModelWithThrow(category) {
     return itemModel;
 };
 
+function* updateAccessorAssociationWithThrow(oldAssocition, newAssociation) {
+    var _criteria = { "proto.association": oldAssocition };
+    var updated = { "proto.association": newAssocition };
+    yield Accessor.update(_criteria, { $set: updated });
+}
+
 function* getAccessorEditableOnlyCategoryWithThrow(accessorTag) {
     const accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, category: 1 });
     if (!accessor) {
@@ -599,6 +604,34 @@ function* firstNSortedItemsCoreEditableInAccessorWithThrow(accessorTag, criteria
     //
     var items = yield itemModel.find(_criteria, _coreProject).sort(_sort).limit(_num);
     return items;
+
+};
+
+function* allItemsEditableInAccessorWithThrow(accessorTag, criteria, project, sort) {
+    var accessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+    var itemModel = yield category2ModelWithThrow(accessor.category);
+
+
+    var _criteria = { "tracer.ownerTag": accessorTag };
+    _.defaults(_criteria, criteria);
+    var _project = {};
+    _.defaults(_project, project);
+    var _sort = {};
+    _.defaults(_sort, sort);
+    //
+    var items = yield itemModel.find(_criteria, _coreProject).sort(_sort).exec();
+    return items;
+
+};
+
+function* updateItemsInAccessorWithThrow(accessorTag, criteria, updated) {
+    var accessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+    var itemModel = yield category2ModelWithThrow(accessor.category);
+
+
+    var _criteria = { "tracer.ownerTag": accessorTag };
+    _.defaults(_criteria, criteria);
+    yield itemModel.update(_criteria, { $set: updated });
 
 };
 //return existNum;
@@ -689,21 +722,23 @@ function* theOneItemCoreReadOnlyInProtoAccessorWithThrow(accessorTag, criteria) 
     var _coreProject = { _id: 0 }; //readonly
     var resultItem = yield _doQueryInProtoChain(accessorTag);
     if (resultItem) {
-        if (resultItem.tracer) { //防止泄露原型信息。
-            resultItem.tracer.ownerTag = accessorTag;
-        } else {
-            resultItem.tracer = { ownerTag: accessorTag };
-        }
+        resultItem.tracer = { ownerTag: accessorTag };
+
     }
     return resultItem;
 
 
     function* _doQueryInProtoChain(_accessorTag) {
-        var _criteria = { "tracer.ownerTag": _accessorTag };
+        var _criteria = {};
+        var accessorWithProto = yield getAccessorEditableOnlyProtoWithThrow(_accessorTag);
+        if (accessorWithProto.association) { //如果有关联，说明这个proto链是专属的，associated改变时，本链不跟随改变。
+            _criteria.tracer.ownerTag = accessorWithProto.association;
+        } else {
+            _criteria.tracer = { ownerTag: _accessorTag };
+        }
         _.defaults(_criteria, criteria);
         var item = yield itemModel.findOne(_criteria, _coreProject);
         if (!item) {
-            var accessorWithProto = yield getAccessorEditableOnlyProtoWithThrow(_accessorTag);
             if (!accessorWithProto.proto || !accessorWithProto.proto.forward) {
                 return null;
             } else {
@@ -717,7 +752,7 @@ function* theOneItemCoreReadOnlyInProtoAccessorWithThrow(accessorTag, criteria) 
 function* theOneItemEditableInAccessorWithThrow(accessorTag, criteria, project) {
     var accessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
     var itemModel = yield category2ModelWithThrow(accessor.category);
-    var _project = { id: 1 }; //防止被污染
+    var _project = { _id: 1 };
     _.defaults(_project, project);
     var _criteria = { "tracer.ownerTag": accessorTag };
     _.defaults(_criteria, criteria);
@@ -737,8 +772,8 @@ function* collapse2Proto(accessorTag, protoAccessorTag) {
             return; //不做修改
         }
     }
-    var accessor = yield getAccessorEditableOnlyProtoWithThrow(accessorTag);
-    return yield _doSetWriteOnCopyOnProto(accessor.proto.forward);
+
+    return yield _doSetWriteOnCopyOnProto(accessorTag);
 
 
     function* _doSetWriteOnCopyOnProto(_accessorTag) {
@@ -746,13 +781,24 @@ function* collapse2Proto(accessorTag, protoAccessorTag) {
         if (!_accessor.proto || !_accessor.proto.forward) {
             return; //root accessor
         }
-        _accessor.proto.writeOnCopy = true;
+        var _directProtoAccessor = yield getAccessorEditableOnlyProtoAndCategoryWithThrow(_accessor.proto.forward);
+        _directProtoAccessor.proto.writeOnCopy = true;
+        var newProtoAccessor = yield newAccessorEditable(_directProtoAccessor.category, _directProtoAccessor.proto.forward);
+        if (_directProtoAccessor.proto.association) { //把自己关联的拷贝
+            newProtoAccessor.proto.association = _directProtoAccessor.proto.association;
+        } else { //关联自己
+            newProtoAccessor.proto.association = _directProtoAccessor.thisTag;
+
+        }
+        yield newProtoAccessor.save();
+        _accessor.proto.forward = newProtoAccessor.thisTag;
         yield _accessor.save();
         yield _doSetWriteOnCopyOnProto(_accessor.proto.forward);
 
     };
 
 };
+
 
 //return a new accessor
 //垃圾收集，没有forward指向的，或是自己没有指向别人的，都是垃圾，定时收集。
@@ -769,15 +815,17 @@ function* addItemInAccessorWithThrow(accessorTag, item) { //complicated.  //upda
         var copyedAccessor = yield newAccessorEditable(accessor.category, accessor.proto.forward); //copyedAccessor's copyonWrite is null or false;
         yield copyedAccessor.save();
         yield copyAllFromAccessorTo(accessorTag, copyedAccessor.thisTag);
+        //原先的关联改成关联到copyed。
+        yield updateAccessorAssociationWithThrow(accessorTag, copyedAccessor.thisTag);
 
-        var itemInAccessor = yield newItemEditableInAccessorWithThrow(copyedAccessor.thisTag);
+        var itemInAccessor = yield newItemEditableInAccessorWithThrow(accessor.thisTag);
         for (key in item) {
             if (Object.prototype.hasOwnProperty.apply(item, key)) { //防止item被污染
                 itemInAccessor[key] = item.key;
             }
         }
         yield itemInAccessor.save();
-        return copyedAccessor.thisTag; //返回新的accessorTag
+        //返回新的accessorTag
 
     } else {
 
@@ -790,10 +838,7 @@ function* addItemInAccessorWithThrow(accessorTag, item) { //complicated.  //upda
             }
         }
         yield itemInAccessor.save();
-        return accessor.thisTag;
     }
-
-
 
 };
 

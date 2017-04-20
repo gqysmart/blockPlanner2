@@ -19,7 +19,7 @@ const accessorSchema = new Schema({
         writeOnCopy: false, //写时拷贝为true，表示这个accessor 的item已经为它的backward专用了。原先的owner在修改时需要你要写时，必须要复制一份里面的内容。原型链因为是硬盘存储，不能太长，不然效率差。用空间换时间。原型链的长度和效能的平衡可以通过控制Accessoritem的数量来控制，譬如每个accessor中items不能超过5000，这个copy insert
         //5000个数据的延迟如果是可以接受的，是需要根据实际的数据库的效能观察得出。。
         forward: { type: String }, //1..n，原型链是无穷长的，关联对象的深度是1
-        //     association: { type: Schema.Types.ObjectId } //关联对象，查找时先找自身，如果自身没有，要先去关联对象查找修改。关联对象的意义好像不大,而且增加了很多的复杂性，还是取消。
+        association: { type: Schema.Types.ObjectId } //关联对象，查找时先找自身，如果自身没有，要先去关联对象查找修改。关联对象的意义好像不大,而且增加了很多的复杂性，还是取消。
     },
     concurrent: { //可以控制并行操作。
         token: { type: String } //保存口令创建时间，必要时根据时间可以强行删除口令
@@ -55,3 +55,13 @@ accessorSchema.index({
 }); //覆盖查询
 
 mongoose.model('Accessor', accessorSchema);
+/**
+ * 
+ * accessor 写时拷贝原理
+ * 1. collapse时，设置原Accessor copyonwrite为TRUE；则原accessor中如果进行增删改时，应进行wrtieoncopy routine。
+ * 2. collapse时，不拷贝itemsInAccessor，而是新建一个Accessor，它的associated 为原accessor的thisTag，这样可以根据associated找到iteminAccessor。
+ * 3. 原accessor，如果增删改routine为：查找所有associated 为thisTag的accessors，并将它们的associated 改为一个新的accessor.thisTag,并拷贝所有原accessor的items，并修改其“tracer.ownerTag”为 新accessor.thisTag.
+ *    并设置writeoncopy 为false，不再有关联到原accessor
+ * 4. collapse的proto查询过程为，如果有associate，查询itemsin （assocated），然后沿着proto链查找。
+ * 5. collpased 如果继续塌陷，如果有associated，则把associate复制给 新的accessor的associate。
+ */

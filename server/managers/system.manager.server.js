@@ -170,18 +170,15 @@ function* initTerminologyDBFromLocale() {
         terminologyAccessorTagCfg.value = sysTerminologyAccessorTag;
         yield terminologyAccessorTagCfg.save();
         var rulesPath = path.join(__dirname, "..", "rules");
-        recursive(rulesPath, function(err, files) {
+        recursive(rulesPath, [".*"], function(err, files) {
             for (let i = 0; i < files.length; i++) {
                 var file = files[i];
                 co(function*() {
 
                     var jsonRules = require(file);
                     for (let i = 0; i < jsonRules.length; i++) {
-                        var terminologyAccessorTagCfg = yield InitConfig.findOne(terminologyAccessorTagCriteria, { value: 1 });
-                        sysTerminologyAccessorTag = terminologyAccessorTagCfg.value;
-                        sysTerminologyAccessorTag = yield termMgr.addTerminologyByRuleDefine(sysTerminologyAccessorTag, jsonRules[i]);
-                        terminologyAccessorTagCfg.value = sysTerminologyAccessorTag;
-                        yield terminologyAccessorTagCfg.save();
+
+                        yield termMgr.addTerminologyByRuleDefine(sysTerminologyAccessorTag, jsonRules[i]);
 
                     }
 

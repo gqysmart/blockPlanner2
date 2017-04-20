@@ -352,25 +352,28 @@ function* getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, 
 
                     if (!_PDC[ruleName]) {
                         var ruleDesc = yield dbMgr.theOneItemCoreReadOnlyInProtoAccessorWithThrow(ruleAccessorTag, { name: ruleName });
+                        if (!ruleDesc) {
+                            //如果规则不存在
+                            var err = { no: exceptionMgr.ruleNotExistException, context: { rule: ruleName } };
+                            throw err;
+                        }
                         var forwardBases = ruleDesc.rule.bases;
                         var PDCItem = {
                             name: ruleDesc.name, //是否要保持
                             status: 0, //0 表示等待前向依赖完成，即pending状态；1：表示完成计算 ；和依赖深度等级好像重复了。
-                            ruleDesc: ruleDesc.rule.desc,
+                            formula: ruleDesc.rule.formula,
                             depth: context.$_depth, //依赖深度
                             forwardBases: forwardBases, //前向依赖列表
                         };
-                        var ropers = ruleDesc.rule.desc.split("=");
-                        if (ropers.length === 3) {
-                            let initValue = parseFloat(ropers[2]);
-                            if (initValue === Number.NaN) { //这里判断要注意返回是null 还是false，因为value 是可以等于false的。
-                                var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} is not a Number.` };
-                                throw (err);
-                            }
-                            PDCItem["value"] = initValue;
+                        if (ruleDesc.iValue) {
+                            PDCItem["value"] = ruleDesc.iValue;
+                        } else {
+                            PDCItem["value"] = 0; //如果没有初始值，初始迭代初始值为0；
                         }
                         _PDC[ruleName] = PDCItem;
                     }
+
+
                     var rulePDCItem = _PDC[ruleName];
                     var pdcMeta = _PDC.$_PDC;
 
@@ -407,7 +410,7 @@ function* getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, 
                     }
                     context.$_depth -= 1;
                     pdcMeta.$totalRulesNum += 1;
-                    var parseResult = yield parseCalcRule(rulePDCItem.ruleDesc, baseValues);
+                    var parseResult = yield sandBoxEval(rulePDCItem.formula, _PDC);
                     rulePDCItem.status = 1;
                     rulePDCItem.value = parseResult;
                 }; //end _doFirstRunInPDC
@@ -457,75 +460,7 @@ function* getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, 
 
             };
             //解析规则
-            function* parseCalcRule(ruleDesc, baseValues) {
-                function* getValueByWebService(timetout) {
-                    return null;
-                };
-                //解析规则
-                var rOpers = /(.*)=(.*)=/.exec(ruleDesc);
-                var value = null;
-                switch (rOpers[1]) {
-                    case "AS": //auto sum,自动求和
-                        try {
-                            value = _.sum(baseValues);
-                            return value;
 
-                        } catch (e) {
-                            var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} autoSum wrong.` };
-                            throw (err);
-
-                        }
-
-                        break;
-                    case "DN":
-                        try {
-                            value = parseFloat(rOpers[2]);
-                            if (value === Number.NaN) { //这里判断要注意返回是null 还是false，因为value 是可以等于false的。
-                                var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} is not a Number.` };
-                                throw (err);
-                            }
-                            return value;
-                        } catch (e) {
-                            var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} parseFloat error.` };
-                            throw (err);
-                        }
-
-                        break;
-                    case "AF": // 以后公式可能很复杂，公式解析,暂时用公式 例如{{1}}* {{2}}单元测试
-                        try {
-                            value = baseValues[0] * baseValues[1];
-                            if (value === null) { //这里判断要注意返回是null 还是false，因为value 是可以等于false的。
-                                var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} formula exec wrong.` };
-                                throw (err);
-
-                            }
-                            return value;
-
-                        } catch (e) {
-
-                            var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} formula exec wrong.` };
-                            throw (err);
-
-                        }
-
-                        break;
-                    case /^WS/.test(rOpers[1]): //web service
-                        value = yield getValueByWebService(5000);
-
-                        if (value === null) { //这里判断要注意返回是null 还是false，因为value 是可以等于false的。
-                            var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} web services timeout.` };
-                            throw (err);
-
-                        }
-                        return value;
-                        break;
-                    default:
-                        var err = { no: -1, desc: `rule.desc=${ruleDesc.rule.desc} no matched algrithm.` };
-                        throw (err);
-
-                }
-
-            };
 
         }; //end function _doHoldRuleAccessorAndDoRun
 
@@ -563,6 +498,26 @@ function* getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, 
  * 7. 关于webservice的更新通知，webservice并不是直接的客户自己的webservice，而是由webserviceserver负责监察通知的服务。服务必须符合观察通知模型。如果服务发生变化，必须通知oberser。obserser会修改ruleaccessor的lastmodifiedtime。
  */
 
+function* sandBoxEval(express, pdc) { //这里需要安全的实现沙箱，暂时直接执行。
+    //表达式检查
+    const G = pdc;
+    var valid = yield doExpressCheck();
+    if (!valid) {
+        var err = { no: exceptionMgr.ruleParseException context: { ruleFormula: express } };
+        throw err;
+    }
+
+    var result = yield doEval();
+    return result;
+
+    function* doEval() {
+        return eval(express);
+    }
+
+    function* doExpressCheck() {
+        return true;
+    }
+}
 
 function* formatPDCData(rootCalcRuleName, PDC) {
 

@@ -36,3 +36,7 @@ const incubatorNotExistException = incubatorException + 1;
 const incubatorIsBusyException = ruleException + 2;
 module.exports.incubatorNotExistException = incubatorNotExistException;
 module.exports.incubatorIsBusyException = incubatorIsBusyException;
+//terminology
+const terminologyException = incubatorException + 50;
+const qualifiedNameNotExistException = terminologyException + 1;
+module.exports.qualifiedNameNotExistException = qualifiedNameNotExistException;
