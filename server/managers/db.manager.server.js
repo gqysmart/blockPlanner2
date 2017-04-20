@@ -22,13 +22,14 @@ const PDCStatus = mongoose.model("PDCStatus");
 const Terminology = mongoose.model("Terminology");
 const Record = mongoose.model("Record");
 const Incubator = mongoose.model("Incubator");
+const InitConfig = mongoose.model("InitConfig");
 
 
 
 
 //
 const defaultHoldOptions = {
-    $_maxLagTime: 3000, //一秒
+    $_maxLagTime: 3000, //3秒
     $_async: false //同步执行，还是异步执行。异步的时候，会释放锁，所以建议同步执行。
 };
 //初始化所有mongoose model
@@ -39,6 +40,11 @@ const rootAccessorTagCfgCriteria = { name: "rootAccessorTag", category: "system"
 
 const terminologyAccessorTagCfgCriteria = { name: "terminologyAccessorTag", category: "system", version: version };
 const systemLogAccessorTagCfgCriteria = { name: "systemLogAccessorTag", category: "system", version: version };
+module.exports.rootAccessorTagCfgCriteria = (function() {
+    var criteria = {};
+    _.defaults(criteria, rootAccessorTagCfgCriteria);
+    return criteria; //防止污染
+})();
 module.exports.rootCalcRuleAccessorTagCfgCriteria = (function() {
     var criteria = {};
     _.defaults(criteria, rootCalcRuleAccessorTagCfgCriteria);
@@ -155,17 +161,6 @@ module.exports.holdLockAndOperWithAssertWithThrow = async(holdLockAndOperWithAss
 
 function* holdLockAndOperWithAssertWithThrow(holdAccessorTag, oper, context) { //调整到db.manager作为通用锁访问，相应的组件有access{}；schema支持继承么？
     //参数调整
-    var accessor = yield Accessor.findOne({ thisTag: holdAccessorTag, version: sysConfig.version }, { thisTag: 1, concurrent: 1 });
-    if (!accessor) {
-        var err = {
-            no: exceptionMgr.accessorNotExistException,
-            contex: {
-                accessor: accessorTag,
-                level: 7
-            }
-        };
-        throw (err);
-    }
     if (!_.isFunction(oper)) {
         var err = { no: exceptionMgr.notFunctionException, context: { function: oper.toString(), level: 7 } };
         throw (err);
@@ -178,60 +173,29 @@ function* holdLockAndOperWithAssertWithThrow(holdAccessorTag, oper, context) { /
         context.$_accessToken = yield createAccessorToken(); //新建随机accesstag，为防止死锁，需要考虑按规则强行释放。
     }
     //
-    if (accessor.concurrent.token && accessor.concurrent.token === context.$_accessToken) { //重入
-        return yield doOper();
-    } else if (accessor.concurrent.token && accessor.concurrent.token !== context.$_accessToken) {
-        var now = new Date();
-        if (now.getTime() - context.$_startTime.getTime() > context.maxLagTime) {
-            var err = { no: exceptionMgr.holdAccessorException, context: { accessor: holdAccessorTag, level: 3 } };
-            throw (err);
-        } //操作失败。
-        else { //尝试随机时间后，再尝试修改
-            yield pauseAndRehold(); //0.5秒以内，重新尝试一次。
+    var holdedAccessor = null;
+    try {
+        holdedAccessor = yield doHoldAccessor(holdAccessorTag, oper, context);
+        console.log(holdedAccessor.concurrent + "g" + context.$_accessToken);
+        var result = yield doOper(holdedAccessor);
+        return result;
+        if (result === null) {
+            console.log("wrong");
         }
-    } else if (!accessor.concurrent.token) {
-        accessor.concurrent.token = context.$_accessToken;
-        accessor.markModified("concurrent.token");
-        yield accessor.save();
-        //重新查找一次，确认目前是自己占用了锁。
-        accessor = yield Accessor.findOne({ thisTag: holdAccessorTag, version: sysConfig.version }, { thisTag: 1, concurrent: 1 });
-        if (accessor.concurrent.token !== context.$_accessToken) {
-            var now = new Date();
-            if (now.getTime() - context.$_startTime.getTime() > context.maxLagTime) {
-                var err = { no: exceptionMgr.holdAccessorException, context: { accessor: holdAccessorTag, level: 3 } }; //正常异常
-                throw (err);
-            } //操作失败。
-            else { //尝试随机时间后，再尝试修改
-                yield pauseAndRehold(); //0.5秒以内，重新尝试一次。
-            }
 
-        } else {
-            var result = yield doOper();
-            return result;
-
+    } catch (e) { //超时。
+        switch (e.no) {
+            case exceptionMgr.holdAccessorException:
+                return null;
+                break;
+            default:
+                throw e;
         }
-    };
+    } finally {
 
-    function pause(miliseconds) {
-        var promise = new Promise(function(resolve, reject) {
-            setTimeout(function() { resolve(miliseconds) }, miliseconds);
-        });
-        return promise;
-    };
+    }
 
-    function pauseAndRehold() {
-        var randomPauseTime = Math.random() * 500;
-        var promise = new Promise(function(resolve, reject) {
-            co(function*() {
-                yield pause(randomPauseTime);
-                yield co(holdLockAndOper(holdAccessorTag, oper, context));
-                resolve(randomPauseTime);
-            });
-        });
-        return promise;
-    };
-
-    function doOper() {
+    function doOper(holdedAccessor) {
         var promise = new Promise(function(resolve, reject) {
             co(function*() {
                 var result = null;
@@ -246,15 +210,63 @@ function* holdLockAndOperWithAssertWithThrow(holdAccessorTag, oper, context) { /
                     throw (e);
 
                 } finally {
-                    accessor.concurrent.token = null;
-                    accessor.markModified("concurrent.token");
-                    yield accessor.save();
+                    holdedAccessor.concurrent.token = "";
+                    yield holdedAccessor.save();
                     resolve(result);
                 }
             });
         });
         return promise;
     }; //end doOper
+    function* doHoldAccessor(holdAccessorTag, oper, context) {
+        var accessor = yield getAccessorEditableOnlyConcurrentWithThrow(holdAccessorTag);
+        if (accessor.concurrent.token && accessor.concurrent.token === context.$_accessToken) { //重入
+            return accessor;
+        } else if (accessor.concurrent.token && accessor.concurrent.token !== context.$_accessToken) {
+            var now = new Date();
+            if (now.getTime() - context.$_startTime.getTime() > context.maxLagTime) {
+                var err = { no: exceptionMgr.holdAccessorException, context: { accessor: holdAccessorTag, level: 3 } };
+                throw (err);
+            } //操作失败。
+            else { //尝试随机时间后，再尝试修改
+                var randomPauseTime = Math.random() * 500;
+                yield pause(randomPauseTime);
+                var result = yield doHoldAccessor(holdAccessorTag, oper, context); //0.5秒以内，重新尝试一次。
+                return result;
+            }
+        } else if (!accessor.concurrent.token) {
+            accessor.concurrent.token = context.$_accessToken;
+            accessor.markModified("concurrent.token");
+            yield accessor.save();
+            //重新查找一次，确认目前是自己占用了锁。
+            accessor = yield getAccessorEditableOnlyConcurrentWithThrow(holdAccessorTag);
+            if (accessor.concurrent.token !== context.$_accessToken) {
+                var now = new Date();
+                if (now.getTime() - context.$_startTime.getTime() > context.maxLagTime) {
+                    var err = { no: exceptionMgr.holdAccessorException, context: { accessor: holdAccessorTag, level: 3 } }; //正常异常
+                    throw (err);
+                } //操作失败。
+                else { //尝试随机时间后，再尝试修改
+                    var randomPauseTime = Math.random() * 500;
+                    yield pause(randomPauseTime);
+                    var result = yield doHoldAccessor(holdAccessorTag, oper, context);
+                    return result;
+                    //0.5秒以内，重新尝试一次。
+                }
+
+            } else {
+                return accessor;
+            }
+        };
+
+    };
+
+    function pause(miliseconds) {
+        var promise = new Promise(function(resolve, reject) {
+            setTimeout(function() { resolve(miliseconds) }, miliseconds);
+        });
+        return promise;
+    };
 
 
 }
@@ -464,6 +476,13 @@ function* assertAccessorExist(accessorTag) {
         throw (err);
     };
 };
+
+//
+/**
+ * 
+ * @param {*} protoAccessorTag 
+ * @param {*} accessorTag 
+ */
 //refactory
 function* isProtoOf(protoAccessorTag, accessorTag) {
     try {
@@ -534,6 +553,22 @@ function* getAccessorEditableOnlyCategoryWithThrow(accessorTag) {
 function* getAccessorEditableOnlySpecialWithThrow(accessorTag) {
 
     var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, special: 1 });
+    if (!accessor) {
+        var err = {
+            no: exceptionMgr.accessorNotExistException,
+            contex: {
+                accessor: accessorTag,
+                level: 7
+            }
+        };
+        throw (err);
+    }
+    return accessor;
+};
+
+function* getAccessorEditableOnlyConcurrentWithThrow(accessorTag) {
+
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, concurrent: 1 });
     if (!accessor) {
         var err = {
             no: exceptionMgr.accessorNotExistException,
@@ -635,8 +670,6 @@ function* getAccessorEditableOnlyProtoWithThrow(accessorTag) {
     return accessor;
 };
 
-
-
 function* copyAllFromAccessorTo(fromAccessorTag, toAccessorTag, criteria, project) {
     var fromAccessor = yield getAccessorEditableOnlyCategoryWithThrow(fromAccessorTag);
     var itemModel = yield category2ModelWithThrow(accessor.category);
@@ -649,14 +682,19 @@ function* copyAllFromAccessorTo(fromAccessorTag, toAccessorTag, criteria, projec
     yield itemModel.update(newItems, { $set: { "tracer.ownerTag": toAccessorTag } });
 };
 
-
 function* theOneItemCoreReadOnlyInProtoAccessorWithThrow(accessorTag, criteria) {
     var rootAccessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
     var itemModel = yield category2ModelWithThrow(rootAccessor.category);
     var coreProject = itemModel.coreProject;
     var _coreProject = { _id: 0 }; //readonly
     var resultItem = yield _doQueryInProtoChain(accessorTag);
-    resultItem.tracer.ownerTag = accessorTag;
+    if (resultItem) {
+        if (resultItem.tracer) { //防止泄露原型信息。
+            resultItem.tracer.ownerTag = accessorTag;
+        } else {
+            resultItem.tracer = { ownerTag: accessorTag };
+        }
+    }
     return resultItem;
 
 
@@ -718,7 +756,8 @@ function* collapse2Proto(accessorTag, protoAccessorTag) {
 
 //return a new accessor
 //垃圾收集，没有forward指向的，或是自己没有指向别人的，都是垃圾，定时收集。
-function* modifyItemInAccessorWithThrow(accessorTag, criteria, item) { //complicated.  //update，add  删除规则是没有必要且不允许的。
+
+function* addItemInAccessorWithThrow(accessorTag, item) { //complicated.  //update，add  删除规则是没有必要且不允许的。
     if (item._id) { //不允许通过id修改
         var err = { no: exceptionMgr.parameterException, context: { parameter: item } };
         throw err;
@@ -731,7 +770,47 @@ function* modifyItemInAccessorWithThrow(accessorTag, criteria, item) { //complic
         yield copyedAccessor.save();
         yield copyAllFromAccessorTo(accessorTag, copyedAccessor.thisTag);
 
-        var itemInAccessor = yield theOneItemEditableInAccessorWithThrow(copyedAccessor.thisTag, criteria);
+        var itemInAccessor = yield newItemEditableInAccessorWithThrow(copyedAccessor.thisTag);
+        for (key in item) {
+            if (Object.prototype.hasOwnProperty.apply(item, key)) { //防止item被污染
+                itemInAccessor[key] = item.key;
+            }
+        }
+        yield itemInAccessor.save();
+        return copyedAccessor.thisTag; //返回新的accessorTag
+
+    } else {
+
+        var itemInAccessor = yield newItemEditableInAccessorWithThrow(accessorTag);
+
+        //应用时，按需加锁修改，添加。unsafety.
+        for (key in item) {
+            if (key !== "_id" && Object.prototype.hasOwnProperty.call(item, key)) { //防止item被污染
+                itemInAccessor[key] = item[key];
+            }
+        }
+        yield itemInAccessor.save();
+        return accessor.thisTag;
+    }
+
+
+
+};
+
+function* updateItemInAccessorWithThrow(accessorTag, criteria, item) { //complicated.  //update，add  删除规则是没有必要且不允许的。
+    if (item._id) { //不允许通过id修改
+        var err = { no: exceptionMgr.parameterException, context: { parameter: item } };
+        throw err;
+    }
+
+    var accessor = yield getAccessorEditableOnlyProtoWithThrow(accessorTag);
+    var copyOnWrite = accessor.proto.copyOnWrite;
+    if (copyOnWrite) {
+        var copyedAccessor = yield newAccessorEditable(accessor.category, accessor.proto.forward); //copyedAccessor's copyonWrite is null or false;
+        yield copyedAccessor.save();
+        yield copyAllFromAccessorTo(accessorTag, copyedAccessor.thisTag);
+
+        var itemInAccessor = yield theOneItemEditableInAccessorWithThrow(copyedAccessor.thisTag, criteria); //不在原型中
         if (!itemInAccessor) { //添加新的item
             itemInAccessor = yield newItemEditableInAccessorWithThrow(copyedAccessor.thisTag);
         }
@@ -807,6 +886,7 @@ function* newAccessorEditable(category, protoAccessorTag) {
 //
 module.exports.firstNSortedItemsCoreEditableInAccessorWithThrow = async(firstNSortedItemsCoreEditableInAccessorWithThrow);
 module.exports.getAccessorEditableOnlySpecialWithThrow = async(getAccessorEditableOnlySpecialWithThrow);
+module.exports.getAccessorEditableOnlyProtoWithThrow = async(getAccessorEditableOnlyProtoWithThrow);
 module.exports.itemsCountInAccessorWithThrow = async(itemsCountInAccessorWithThrow);
 module.exports.keepItemsCountInAccessorBelowWithThrow = async(keepItemsCountInAccessorBelowWithThrow);
 module.exports.newItemEditableInAccessorWithThrow = async(newItemEditableInAccessorWithThrow);
@@ -814,3 +894,5 @@ module.exports.theOneItemCoreReadOnlyInProtoAccessorWithThrow = async(theOneItem
 module.exports.theOneItemEditableInAccessorWithThrow = async(theOneItemEditableInAccessorWithThrow);
 module.exports.newNullAccessor = async(newNullAccessorEditable);
 module.exports.newAccessorEditable = async(newAccessorEditable);
+module.exports.updateItemInAccessorWithThrow = async(updateItemInAccessorWithThrow);
+module.exports.addItemInAccessorWithThrow = async(addItemInAccessorWithThrow);

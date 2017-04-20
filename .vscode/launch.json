@@ -33,7 +33,7 @@
             "type": "node",
             "request": "launch",
             "name": "debug test",
-            "program": "${workspaceRoot}/gulp/styles.js",
+            "program": "${workspaceRoot}/server/test.js",
             "cwd": "${workspaceRoot}"
         },
         {

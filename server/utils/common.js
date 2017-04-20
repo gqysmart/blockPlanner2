@@ -1,9 +1,31 @@
-var template = "";
-var rRoot = /住宅/;
-var rChildren = /多层住宅/;
-var loop = ["多层住宅", "小高层住宅", "高层住宅", "合院住宅", "情景花园"];
+const fs = require("fs");
+const path = require("path");
 
-for (let i = i; i < loop.lenght; i++) {
+module.exports = {
+    readDirSyncRecursive
+};
 
+var readDirSyncRecursive = function(baseDir) {
+    baseDir = baseDir.replace('/\/$/', '');
 
-}
+    var files = [],
+        curFiles,
+        nextDirs;
+    var isDir = function(fName) {
+        return fs.existsSync(path.join(baseDir, fName)) ? fs.statSync(path.join(baseDir, fName)).isDirectory() : false;
+    };
+    var prependBaseDir = function(fName) {
+        return path.join(baseDir, fName);
+    };
+
+    curFiles = fs.readdirSync(baseDir);
+    nextDirs = curFiles.filter(isDir);
+    curFiles = curFiles.map(prependBaseDir);
+
+    files = files.concat(curFiles);
+    while (nextDirs.length) {
+        files = files.concat(readDirSyncRecursive(path.join(baseDir, nextDirs.shift())));
+    }
+
+    return files;
+};

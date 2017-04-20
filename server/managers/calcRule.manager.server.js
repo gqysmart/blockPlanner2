@@ -18,6 +18,7 @@ const CalcRuleDescriptor = mongoose.model("CalcRuleDescriptor");
 const InitConfig = mongoose.model("InitConfig");
 const Accessor = mongoose.model("Accessor");
 const dbMgr = require("./db.manager.server");
+const termMgr = require("./terminology.manager.server");
 const exceptionMgr = require("./exception.manager.server");
 const rootCalcRuleAccessorTagCfgCriteria = dbMgr.rootCalcRuleAccessorTagCfgCriteria
 
@@ -226,16 +227,3 @@ module.exports.createCalcRules = async(createCalcRules);
 
 
 const objectNamePrefix = "G";
-
-function* ruleDefine2TerminologyAndRuleDescriptor(accessorTag, ruleDefine) {
-    var _nameCn = ruleDefine.name;
-    var _formula = ruleDefine.formula;
-    var _bases = ruleDefine.bases;
-
-    function* parseNameCn(nameCn) {
-
-
-    }
-
-
-}

@@ -12,11 +12,11 @@ const passport = require("passport");
 const config = require("./config/config");
 const sysConfig = require("./config/sys");
 const { wrap: async, co: co } = require("co");
+const ObjectID = require("mongodb").ObjectID;
 
 const models = join(__dirname, "models");
 const port = process.env.PORT || 3200;
 /** expose */
-module.exports = app;
 //
 const appDbConnectString = sysConfig.appdb.connectString;
 

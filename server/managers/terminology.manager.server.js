@@ -11,6 +11,7 @@ const mongoose = require("mongoose");
 const ObjectID = require("mongoDB").ObjectID;
 const sysConfig = require("../config/sys.js");
 const Accessor = mongoose.model("Accessor");
+const dbMgr = require("./db.manager.server");
 //mongoose 
 const Terminology = mongoose.model("Terminology");
 //
@@ -110,7 +111,52 @@ function* terminologyTag2QualifiedName(terminologyTag, terminologyAccessorTag, o
 
 //refactory
 
-function* createTerminology(accessorTag, name) {
-
-
+function* generatorTerminologyNameByqualifiedNameUnunique(qName) {
+    var newName = new ObjectID();
+    return newName.toString();
 }
+module.exports.generatorTerminologyNameByqualifiedNameUnunique = async(generatorTerminologyNameByqualifiedNameUnunique);
+
+function* addTerminologyByRuleDefine(terminologyAccessorTag, ruleDefine) {
+    var _nameCn = ruleDefine.name;
+    var descResult = {};
+
+    yield parseDesc(ruleDefine.desc);
+
+    function* parseDesc(desc) {
+        if (!desc) {
+            desc = "";
+        }
+
+        var descSegs = desc.split("|");
+        for (let i = 0; i < descSegs.length; i++) {
+            if (/^单位/.test(descSegs[i])) {
+
+                var unitDesc = descSegs[i];
+                var unit = unitDesc.split(":")[1];
+                descResult.unit = unit;
+                continue;
+            }
+        }
+
+    }
+
+    var context = {};
+    var newAccessorTag = yield dbMgr.holdLockAndOperWithAssertWithThrow(terminologyAccessorTag, async(function*() {
+        var existTerm = yield dbMgr.theOneItemCoreReadOnlyInProtoAccessorWithThrow(terminologyAccessorTag, { "detail.cn": _nameCn });
+        if (!existTerm) {
+            var item = {
+                name: yield generatorTerminologyNameByqualifiedNameUnunique(_nameCn),
+                pretty: { cn: _nameCn },
+                unit: descResult.unit,
+                explaination: descResult.explaination,
+                markdown: descResult.markdown,
+            }
+            var newTerminologyAccessorTag = yield dbMgr.addItemInAccessorWithThrow(terminologyAccessorTag, item);
+            return newTerminologyAccessorTag;
+        }
+    }), context);
+    return newAccessorTag;
+
+};
+module.exports.addTerminologyByRuleDefine = async(addTerminologyByRuleDefine);

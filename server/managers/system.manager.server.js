@@ -18,7 +18,9 @@ const systemDbConnectString = sysConfig.systemdb.connectString;
 const appDbConnectString = sysConfig.appdb.connectString;
 const models = path.join(__dirname, "..", "models");
 const dbMgr = require("./db.manager.server");
+const termMgr = require("./terminology.manager.server");
 const logManager = require("./log.manager.server");
+const recursive = require("recursive-readdir");
 
 //
 
@@ -51,8 +53,9 @@ module.exports.init = async(function*(cb) {
     if (!initedCfg) {
         try {
             yield co(initProtoChain());
-            yield co(initSystemLog()); //1
-            yield co(initTerminologyDB());
+            //   yield co(initSystemLog()); //1
+            yield co(initTerminologyDBFromLocale());
+            // yield co(initTerminologyDBFromRemote());
             yield co(initCalcRuleDB());
             initedCfg = new InitConfig(initedCfgCriteria);
             initedCfg.value = true;
@@ -131,7 +134,7 @@ function* initSystemLog() {
 
 }
 
-function* initTerminologyDB() {
+function* initTerminologyDBFromRemote() {
 
     var terminologyCfg = yield InitConfig.findOne(terminologyAccessorTagCriteria, { value: 1 });
     if (!terminologyCfg) { //copy form systmemb db
@@ -152,6 +155,45 @@ function* initTerminologyDB() {
         terminologyAccessorTagCfg.value = termAccessor.thisTag;
         yield terminologyAccessorTagCfg.save();
         db.close();
+
+    }
+};
+
+function* initTerminologyDBFromLocale() {
+
+    var terminologyAccessorTagCfg = yield InitConfig.findOne(terminologyAccessorTagCriteria, { value: 1 }).exec();
+    if (!terminologyAccessorTagCfg) { //copy form systmemb db
+        var sysTerminologyAccessor = yield dbMgr.newAccessorEditable("TERMINOLOGY");
+        var sysTerminologyAccessorTag = sysTerminologyAccessor.thisTag;
+        yield sysTerminologyAccessor.save();
+        terminologyAccessorTagCfg = new InitConfig(terminologyAccessorTagCriteria);
+        terminologyAccessorTagCfg.value = sysTerminologyAccessorTag;
+        yield terminologyAccessorTagCfg.save();
+        var rulesPath = path.join(__dirname, "..", "rules");
+        recursive(rulesPath, function(err, files) {
+            for (let i = 0; i < files.length; i++) {
+                var file = files[i];
+                co(function*() {
+
+                    var jsonRules = require(file);
+                    for (let i = 0; i < jsonRules.length; i++) {
+                        var terminologyAccessorTagCfg = yield InitConfig.findOne(terminologyAccessorTagCriteria, { value: 1 });
+                        sysTerminologyAccessorTag = terminologyAccessorTagCfg.value;
+                        sysTerminologyAccessorTag = yield termMgr.addTerminologyByRuleDefine(sysTerminologyAccessorTag, jsonRules[i]);
+                        terminologyAccessorTagCfg.value = sysTerminologyAccessorTag;
+                        yield terminologyAccessorTagCfg.save();
+
+                    }
+
+                });
+
+
+            }
+
+        });
+
+
+
 
     }
 }
