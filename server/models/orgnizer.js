@@ -20,20 +20,21 @@ const Schema = mongoose.Schema;
  * user schema
  */
 
-const roleSchema = new Schema({ //。
-    name: { type: String, required: true }, //譬如管理员，设计师等
-    orgnizer: { type: String, require: true }, //某组织的某个角色
-    security: {
-        privilegeAccessorTag: String, //权限原型链
-    },
+const orgnizerSchema = new Schema({ //统一为ruleformulariptor。包括计算规则，断言规则，等等。
+    name: { type: String, required: true }, //CalcRuleAccessor 可能会根据类别通过ownertag分类存储calc规则。
     assets: {
-        projectAccessorTag: { type: String }, //角色拥有的项目资源
-    }
+        projectsAccessorTag: { type: String, require: true }, //自己拥有的可控项目资源
+    },
+    pretty: { type: String, required: true }, //可识别name
+    admin: { type: String }, //组织的拥有者，对组织有编辑，删除权限
+    others: {}, //其他一些组织信息。
 });
 
+//create query index
+//查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
 
+var Orgnizer = mongoose.model('Orgnizer', orgnizerSchema);
 
-var Role = mongoose.model('Role', roleSchema);
 
 // /**
 //  *

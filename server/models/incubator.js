@@ -1,6 +1,6 @@
 /**
- * incubator 孵化器是规则实现的场所。通过对孵化的的策略strategy设置不同的计算规则，形成不同的记录。
- * 同时保存了，实验方案 calcrule，实验环境，即pdc，实验结果record。
+ * incubator 孵化器是规则演变的场所，一个孵化器可以孵化出N个不同条件下的规则，通过fatherName 建立演化关系，并通过ruleAccessor和terminologyAccessor保存演化记录，
+ * 并维持这种演变关系。每个孵化器可以通过container获取计算资源PDC，以及record中心。一般孵化器演化时，只需要copy父演化器的container的container。
  * 
  * 
  */
@@ -19,14 +19,13 @@ const Schema = mongoose.Schema;
 
 const incubatorSchema = new Schema({
     name: { type: String, require: true },
-    desc: { type: String },
-    tags: [String],
     tracer: {
-        ownerTag: { type: String }, //ref id incubatorAccessorTag
+        fatherName: { type: String }, //维持进化关系
+        ownerTag: { type: String }, //谁来维护这个孵化器，一般就是方案。
     },
     strategy: {
         calcRuleAccessorTag: { type: String, require: true },
-        terminologyAccessorTag: { type: String }
+        terminologyAccessorTag: { type: String, require: true }
     },
     container: {
         PDCAccessorTag: { type: String, require: true },
@@ -43,14 +42,16 @@ const coreProject = {
     name: 1,
     "container.PDCAccessorTag": 1,
     "container.recordAccessorTag": 1,
-    "strategy.calcRuleAccessorTag": 1
+    "strategy.calcRuleAccessorTag": 1,
+    "strategy.terminologyAccessorTag": 1
 };
 const coveredIndex = {
     "tracer.ownerTag": 1,
     name: 1,
     "container.PDCAccessorTag": 1,
     "container.recordAccessorTag": 1,
-    "strategy.calcRuleAccessorTag": 1
+    "strategy.calcRuleAccessorTag": 1,
+    "strategy.terminologyAccessorTag": 1
 };
 incubatorSchema.index(coveredIndex); //cover 查询
 

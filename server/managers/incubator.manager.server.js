@@ -503,7 +503,7 @@ function* sandBoxEval(express, pdc) { //这里需要安全的实现沙箱，暂�
     const G = pdc;
     var valid = yield doExpressCheck();
     if (!valid) {
-        var err = { no: exceptionMgr.ruleParseException context: { ruleFormula: express } };
+        var err = { no: exceptionMgr.ruleParseException, context: { ruleFormula: express } };
         throw err;
     }
 
@@ -548,3 +548,54 @@ function* formatPDCData(rootCalcRuleName, PDC) {
 
 
 };
+
+function* newIncubatorEditableWithAllocateContainerWithThrow(incubatorAccessorTag, ownerTag) {
+    //为了保护演变关系，资源分配后就不允许改动了。
+    var newIncubator = yield dbMgr.newItemEditableInAccessorWithThrow(incubatorAccessorTag);
+    //如果没有父incubator，就为孵化器创建container资源。
+    var newPDCAccessor = yield dbMgr.newAccessorEditableWithThrow("PDC");
+    yield newPDCAccessor.save();
+    newIncubator.container.PDCAccessorTag = newPDCAccessor.thisTag; //复制容器环境
+    var newRecordAccessor = yield dbMgr.newAccessorEditableWithThrow("RECORD");
+    yield newRecordAccessor.save();
+    newIncubator.container.recordAccessorTag = newRecordAccessor.thisTag;
+
+    var newRuleAccessor = yield dbMgr.newAccessorEditableWithThrow("RULE");
+    yield newRuleAccessor.save();
+    var newTerminologyAccessor = yield dbMgr.newAccessorEditableWithThrow("TERMINOLOGY");
+    yield newTerminologyAccessor.save();
+
+    newIncubator.strategy.calcRuleAccessorTag = newRuleAccessor.thisTag;
+    newIncubator.strategy.terminologyAccessorTag = newTerminologyAccessor.thisTag;
+    yield newIncubator.save();
+    return newIncubator;
+}
+
+function* newIncubatorEditableWithFatherWithThrow(incubatorAccessorTag, fatherName, ownerTag) {
+    //为了保护演变关系，资源分配后就不允许改动了。
+    //如果没有父incubator，就为孵化器创建container资源。
+    if (!fatherName) {
+        var err = { no: exceptionMgr.parameterException, context: { father: fatherName } };
+        throw err;
+
+    } else {
+        var newIncubator = yield dbMgr.newItemEditableInAccessorWithThrow(incubatorAccessorTag);
+        newIncubator.tracer.ownerTag = ownerTag;
+
+        var fatherIncubator = yield dbMgr.theOneItemCoreReadOnlyInProtoAccessorWithThrow(incubatorAccessorTag);
+        newIncubator.tracer.fatherName = fatherName;
+        newIncubator.container = fatherIncubator.container; //复制容器环境
+        var newRuleAccessor = yield dbMgr.newAccessorEditableWithThrow("RULE", fatherIncubator.strategy.calcRuleAccessorTag);
+        yield newRuleAccessor.save();
+        var newTerminologyAccessor = yield dbMgr.newAccessorEditableWithThrow("TERMINOLOGY", fatherIncubator.strategy.terminologyAccessorTag);
+        yield newTerminologyAccessor.save();
+
+        newIncubator.strategy.calcRuleAccessorTag = newRuleAccessor.thisTag;
+        newIncubator.strategy.terminologyAccessorTag = newTerminologyAccessor.thisTag;
+        yield newIncubator.save();
+        return newIncubator;
+    }
+
+};
+module.exports.newIncubatorEditableWithAllocateContainerWithThrow = async(newIncubatorEditableWithAllocateContainerWithThrow);
+module.exports.newIncubatorEditableWithFatherWithThrow = async(newIncubatorEditableWithFatherWithThrow);

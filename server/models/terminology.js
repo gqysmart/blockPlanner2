@@ -16,8 +16,8 @@ const Schema = mongoose.Schema;
  */
 
 const terminologySchema = new Schema({
-    name: { type: String, require: true }, //实际使用时一般为objectid，
-    pretty: { en: String, cn: String }, //自然分类描述语言,delimiter为"/"
+    name: { type: String, unique: true, require: true }, //实际使用时一般为objectid，
+    pretty: { en: String, cn: { type: String, unique: true } }, //自然分类描述语言,delimiter为"/"
     unit: { type: String }, //单位
     explaination: { type: String }, //简短的术语解释
     markdown: String, //详细的术语解释

@@ -18,15 +18,18 @@ const Schema = mongoose.Schema;
 
 const ProjectSchema = new Schema({
     thisTag: { type: String, required: true },
+    name: { type: String }, //简单描述
+
     assets: {
-        rootIncubatorAccessorTag: { type: String, require: true } //新建项目时默认有一个。
+        incubatorAccessorTag: { type: String, require: true },
+        incubator: { type: String, require: true } //新建项目时默认有一个。
     },
     tracer: {
-        ownerTag: { type: String }, //ref id
+        ownerTag: { type: String }, //accessorTag
+        // orgnizerName: { type: String } //项目属于某个组织
     },
-    tags: [String],
+    tags: [String], //like 系统标签 public /private/
     version: { type: String, },
-    desc: { type: String }, //简单描述
     markdown: String
 
 

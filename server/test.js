@@ -30,7 +30,12 @@ fs.readdirSync(models)
 
 
 const Record = mongoose.model("Record");
+const Terminology = mongoose.model("Terminology");
 co(function*() {
-    var items = yield Record.find();
-    yield Record.remove(items);
+    console.log((new Date()).toString());
+    var items = yield Terminology.find({}, { _id: 0 }).limit().exec();
+    console.log((new Date()).toString());
+    var items2 = yield Terminology.find({ _id: { $in: items } }).exec();
+    console.log((new Date()).toString());
+    var it = 10;
 })

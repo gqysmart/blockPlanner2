@@ -13,10 +13,7 @@ const mongoose = require("mongoose");
 const ObjectID = require("mongoDB").ObjectID;
 const sysConfig = require("../config/sys.js");
 //
-const CalcRuleDescriptor = mongoose.model("CalcRuleDescriptor");
-//const CalcRuleAccessor = mongoose.model("CalcRuleAccessor");
-const InitConfig = mongoose.model("InitConfig");
-const Accessor = mongoose.model("Accessor");
+
 const dbMgr = require("./db.manager.server");
 const termMgr = require("./terminology.manager.server");
 const exceptionMgr = require("./exception.manager.server");
@@ -225,5 +222,51 @@ function* createCalcRules(sourceRuleAccessorTag) {
 
 module.exports.createCalcRules = async(createCalcRules);
 
+//refactory
 
-const objectNamePrefix = "G";
+function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDefines) {
+    if (!_.isArray(ruleDefines)) {
+        ruleDefines = [ruleDefines];
+    }
+    var ruleDescriptors = [];
+    for (let i = 0; i < ruleDefines.length; i++) {
+        var ruleDefine = ruleDefines[i];
+        var name = yield termMgr.qualifiedName2TerminologyTagWithThrow(ruleDefine.name, terminologyTag);
+        var bases = yield parseBases(ruleDefine.bases);
+
+        var item = {
+            name: name,
+            rule: { bases: bases, formula: ruleDefine.formula, iValue: ruleDefine.iValue },
+        };
+        ruleDescriptors.push(item);
+    }
+
+    function* parseBases(bases) {
+        if (!bases) {
+            return;
+        }
+        var result = [];
+
+        var descSegs = bases.split("|");
+        for (let i = 0; i < descSegs.length; i++) {
+            var baseDesc = descSegs[i].split(":");
+            result[baseDesc[0] - 1] = yield termMgr.qualifiedName2TerminologyTagWithThrow(baseDesc[1], terminologyTag);
+        }
+        return result;
+
+    }
+
+    var context = {};
+    yield dbMgr.holdLockAndOperWithAssertWithThrow(ruleAccessorTag, async(function*() {
+
+        if (ruleDescriptors.length > 0) {
+            yield dbMgr.addItemsToAccessorWithThrow(ruleAccessorTag, ruleDescriptors);
+
+        }
+
+    }), context);
+
+
+};
+
+module.exports.addRuleDescriptorByRuleDefine = async(addRuleDescriptorByRuleDefine);

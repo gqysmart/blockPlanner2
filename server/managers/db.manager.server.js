@@ -17,7 +17,7 @@ const version = sysConfig.version;
 const exceptionMgr = require("./exception.manager.server");
 //model
 const Accessor = mongoose.model("Accessor");
-const RuleDescriptor = mongoose.model("CalcRuleDescriptor");
+const RuleDescriptor = mongoose.model("RuleDescriptor");
 const PDCStatus = mongoose.model("PDCStatus");
 const Terminology = mongoose.model("Terminology");
 const Record = mongoose.model("Record");
@@ -29,7 +29,7 @@ const InitConfig = mongoose.model("InitConfig");
 
 //
 const defaultHoldOptions = {
-    $_maxLagTime: 3000, //3秒
+    $_maxLagTime: 30000, //3秒
     $_async: false //同步执行，还是异步执行。异步的时候，会释放锁，所以建议同步执行。
 };
 //初始化所有mongoose model
@@ -37,9 +37,14 @@ const defaultHoldOptions = {
 const sysinitedCfgCriteria = { name: "systemInited", category: "system", version: version };
 const rootCalcRuleAccessorTagCfgCriteria = { name: "rootCalcRuleAccessorTag", category: "system", version: version };
 const rootAccessorTagCfgCriteria = { name: "rootAccessorTag", category: "system", version: version };
-
 const terminologyAccessorTagCfgCriteria = { name: "terminologyAccessorTag", category: "system", version: version };
+const orgnizerAccessorTagCfgCriteria = { name: "orgnizerAccessorTag", category: "system", version: version };
 const systemLogAccessorTagCfgCriteria = { name: "systemLogAccessorTag", category: "system", version: version };
+module.exports.orgnizerAccessorTagCfgCriteria = (function() {
+    var criteria = {};
+    _.defaults(criteria, orgnizerAccessorTagCfgCriteria);
+    return criteria; //防止污染
+})();
 module.exports.rootAccessorTagCfgCriteria = (function() {
     var criteria = {};
     _.defaults(criteria, rootAccessorTagCfgCriteria);
@@ -71,10 +76,7 @@ module.exports.sysinitedCfgCriteria = (function() {
  * 
  */
 
-/**
- * 
- * 
- */
+
 function* getUniqTag() {
     let tag = new ObjectID();
     return tag.toString();
@@ -83,73 +85,13 @@ module.exports.getUniqTag = async(getUniqTag);
 /**
  * 
  */
-module.exports.initAccessor = async(initAccessor);
-module.exports.initLogAccessor = async(initLogAccessor);
-module.exports.initCalcRuleAccessor = async(initCalcRuleAccessor);
-module.exports.initTerminologyAccessor = async(initTerminologyAccessor);
-module.exports.initRecordAccessor = async(initRecordAccessor);
-module.exports.initIncubatorAccessor = async(initIncubatorAccessor);
-module.exports.initPDCAccessor = async(initPDCAccessor);
-
-
-function* initAccessor(accessor) {
-    accessor.thisTag = yield getUniqTag();
-    accessor.timemark.lastModifed = Date.now();
-}
-
-function* initPDCAccessor(accessor) {
-    yield co(initAccessor(accessor));
-    accessor.category = "PDC"; //status: OK,COMPUTING,
-    accessor.special = { maxPDC: 10 };
-}
-
-function* initRecordAccessor(accessor) {
-    yield co(initAccessor(accessor));
-    accessor.category = "RECORD"; //status: OK,COMPUTING,
-
-}
-
-
-
-function* initLogAccessor(accessor) {
-    yield co(initAccessor(accessor));
-    accessor.category = "LOG"; //status: OK,COMPUTING,
-    accessor.special = { logLevel: 7 };
-}
-
-function* initCalcRuleAccessor(accessor) {
-    yield co(initAccessor(accessor));
-    accessor.category = "RULE"; //status: OK,COMPUTING,
-
-}
-
-function* initTerminologyAccessor(accessor) {
-    yield co(initAccessor(accessor));
-    accessor.category = "TERMINOLOGY"; //status: OK,COMPUTING,
-}
-
-function* initIncubatorAccessor(accessor) {
-    yield co(initAccessor(accessor));
-    accessor.category = "INCUBATOR"; //status: OK,COMPUTING,
-
-}
-
-
-
-/**
- * 
- * @param {*} modelName 访问控制块mongoose model 名。
- * @param {*} accessorID 
- * @param {*} context 
- */
-
 //访问器 有并发访问器，安全访问器，跟踪访问器等等。
-function* createAccessorToken() {
+function* _createAccessorToken() {
     var token = new ObjectID();
     return token.toString();
 }
 
-function* isTagEqual(tagA, tagB) {
+function* _isTagEqual(tagA, tagB) {
     return tagA === tagB;
 };
 /**
@@ -169,18 +111,15 @@ function* holdLockAndOperWithAssertWithThrow(holdAccessorTag, oper, context) { /
     //
     if (!context.$_startTime) { context.$_startTime = new Date() }; //计时
     if (!context.$_accessToken) {
-        context.$_accessToken = yield createAccessorToken(); //新建随机accesstag，为防止死锁，需要考虑按规则强行释放。
+        context.$_accessToken = yield _createAccessorToken(); //新建随机accesstag，为防止死锁，需要考虑按规则强行释放。
     }
     //
     var holdedAccessor = null;
     try {
         holdedAccessor = yield doHoldAccessor(holdAccessorTag, oper, context);
-        console.log(holdedAccessor.concurrent + "g" + context.$_accessToken);
         var result = yield doOper(holdedAccessor);
         return result;
-        if (result === null) {
-            console.log("wrong");
-        }
+
 
     } catch (e) { //超时。
         switch (e.no) {
@@ -218,7 +157,7 @@ function* holdLockAndOperWithAssertWithThrow(holdAccessorTag, oper, context) { /
         return promise;
     }; //end doOper
     function* doHoldAccessor(holdAccessorTag, oper, context) {
-        var accessor = yield getAccessorEditableOnlyConcurrentWithThrow(holdAccessorTag);
+        var accessor = yield _getAccessorEditableOnlyConcurrentWithThrow(holdAccessorTag);
         if (accessor.concurrent.token && accessor.concurrent.token === context.$_accessToken) { //重入
             return accessor;
         } else if (accessor.concurrent.token && accessor.concurrent.token !== context.$_accessToken) {
@@ -238,7 +177,7 @@ function* holdLockAndOperWithAssertWithThrow(holdAccessorTag, oper, context) { /
             accessor.markModified("concurrent.token");
             yield accessor.save();
             //重新查找一次，确认目前是自己占用了锁。
-            accessor = yield getAccessorEditableOnlyConcurrentWithThrow(holdAccessorTag);
+            accessor = yield _getAccessorEditableOnlyConcurrentWithThrow(holdAccessorTag);
             if (accessor.concurrent.token !== context.$_accessToken) {
                 var now = new Date();
                 if (now.getTime() - context.$_startTime.getTime() > context.maxLagTime) {
@@ -268,27 +207,560 @@ function* holdLockAndOperWithAssertWithThrow(holdAccessorTag, oper, context) { /
     };
 
 
+};
+/**
+ * 
+ * accessorItems
+ */
+
+module.exports.addItemsToAccessorWithThrow = async(_addItemsToAccessorWithThrow);
+module.exports.addOneItemToAccessorWithThrow = async(_addOneItemToAccessorWithThrow);
+module.exports.updateItemsInAccessorWithThrow = async(_updateItemsInAccessorWithThrow);
+module.exports.theOneItemInAccessorWithThrow = async(_theOneItemInAccessorWithThrow);
+module.exports.theOneItemAlongProtoToAccessorWithThrow = async(_theOneItemAlongProtoToAccessorWithThrow);
+module.exports.itemsCountInAccessorWithThrow = async(_itemsCountInAccessorWithThrow);
+module.exports.allItemsInAccessorWithThrow = async(_allItemsInAccessorWithThrow);
+module.exports.allItemsFromAccessorToWithThrow = async(_allItemsFromAccessorToWithThrow);
+
+function* _theOneItemAlongProtoToAccessorWithThrow(accessorTag, toAccesorTag, criteria, project) {
+
+    var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+    var itemModel = yield _category2ModelWithThrow(accessor.category);
+    var resultItem = yield _doQueryInProtoChain();
+    var _criteria = { "tracer.ownerTag": accessorTag };
+    _.defaults(_criteria, criteria);
+
+    var _project = { _id: 0, "tracer.ownerTag": 0 }; //防止泄露原型信息
+
+    _.defaults(_project, project);
+    return yield _doQueryInProtoChain(accessorTag);
+
+    function* _doQueryInProtoChain(accessorTag) {
+        var accessorWithProto = yield _getAccessorEditableOnlyProtoWithThrow(accessorTag);
+        if (!accessorWithProto.proto || !accessorWithProto.proto.forward) {
+            return null;
+        }
+
+        _criteria.tracer.ownerTag = accessorTag; //修改查询对象
+        if (accessorWithProto.proto.association) { //原型链已经专用了
+            _criteria.tracer.ownerTag = accessorWithProto.proto.association;
+        }
+        var resultItem = yield itemModel.findOne(_criteria, _project);
+        if (!resultItem) {
+            if (accessorTag !== toAccesorTag) {
+                return yield _doQueryInProtoChain(accessorWithProto.proto.forward);
+            } else { return null; }
+        }
+        return resultItem;
+    }
+};
+
+function* _allItemsInAccessorWithThrow(accessorTag, criteria, project, sort, limit) {
+    var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+    var itemModel = yield _category2ModelWithThrow(accessor.category);
+    var _criteria = { "tracer.ownerTag": accesscorTag };
+    _.defaults(_criteria, criteria);
+    var _project = { id: 0 };
+    _.defaults(_project, project);
+    yield itemModel.find(_criteria, _project).sort(sort).limit(limit).exec();
+
 }
+
+function* _allItemsFromAccessorToWithThrow(fromAccessorTag, toAccesorTag, criteria, project) {
+
+    var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(fromAccessorTag);
+    var itemModel = yield _category2ModelWithThrow(accessor.category);
+    var resultItem = yield _doQueryInProtoChain();
+    var _criteria = {};
+    _.defaults(_criteria, criteria);
+    var _project = { _id: 0, "tracer.ownerTag": 0 };
+    _.defaults(_project, project);
+    var resultItems = [];
+    yield _doQueryInProtoChain(fromAccessorTag);
+    return resultItems;
+
+    function* _doQueryInProtoChain(accessorTag) {
+        var accessorWithProto = yield _getAccessorEditableOnlyProtoWithThrow(accessorTag);
+        if (!accessorWithProto.proto || !accessorWithProto.proto.forward) {
+            return;
+        }
+        _criteria.tracer.ownerTag = accessorTag; //修改查询对象
+        if (accessorWithProto.proto.association) { //原型链已经专用了
+            _criteria.tracer.ownerTag = accessorWithProto.proto.association;
+        }
+        var items = yield itemModel.find(_criteria, _project).exec();
+        if (items.length > 0) {
+            resultItems = resultItems.concat(items); //不保证item的唯一性，由应用自己解决。
+        }
+        if (accessorTag !== toAccesorTag) {
+            return yield _doQueryInProtoChain(accessorWithProto.proto.forward);
+        } else { return; }
+    }
+};
+
+function* _addItemsToAccessorWithThrow(accessorTag, items, project) { //complicated.  //update，add  删除规则是没有必要且不允许的。
+
+    var accessor = yield _getAccessorEditableOnlyProtoAndCategoryWithThrow(accessorTag);
+    var copyOnWrite = accessor.proto.copyOnWrite;
+    if (copyOnWrite) {
+        yield _doCopyOnWrite(accessorTag);
+    }
+    var itemModel = yield _category2ModelWithThrow(accessor.category);
+    var _update = { tracer: { ownerTag: accessorTag } };
+
+    var resultItems = yield itemModel.insertMany(items);
+    yield itemModel.updateMany(resultItems, { $set: _update });
+    //返回新的accessorTag
+    var now = Date.now();
+    yield _updateAccessorWithThrow(accessorTag, {
+        timemark: { lastModifed: now }
+    });
+    var _project = { _id: 0 };
+    _.defaults(_project, project);
+    var _criteria = { _id: { $in: resultItems } };
+    return itemModel.find(_criteria, _project).exec(); //返回添加的item，不包含_id,不能直接操作。
+};
+
+function* _addOneItemToAccessorWithThrow(accessorTag, item, project) {
+    var items = yield _addItemsToAccessorWithThrow(accessorTag, item, project);
+    var item = items[0];
+    return item;
+}
+
+function* _updateItemsInAccessorWithThrow(accessorTag, criteria, updated, project) { //complicated.  //update，add  删除规则是没有必要且不允许的。
+
+    var accessor = yield _getAccessorEditableOnlyProtoAndCategoryWithThrow(accessorTag);
+    var copyOnWrite = accessor.proto.copyOnWrite;
+    if (copyOnWrite) {
+        yield _doCopyOnWrite(accessorTag);
+    }
+
+    var itemModel = yield _category2ModelWithThrow(accessor.category);
+    var _criteria = { "tracer.ownerTag": accessorTag };
+    _.defaults(_criteria, criteria);
+    var updatedItems = yield itemModel.find(_criteria, { _id: 1 }).exec(); //保存修改过的对象
+    yield itemModel.updateMany(_criteria, { $set: updated });
+    var _project = { id: 0 };
+    _.defaults(_project, project);
+    return yield itemModel.find({ _id: { $in: updatedItems } }, _project).exec();
+};
+
+function* _theOneItemInAccessorWithThrow(accessorTag, criteria, project) {
+    var items = yield _allItemsInAccessorWithThrow(accessorTag, criteria, project);
+    if (items.length > 0) {
+        return items[0];
+    }
+    return null;
+};
+
+function* _itemsCountInAccessorWithThrow(accessorTag, criteria) {
+    var accessor = yield getAccessorEditableOnlyCategoryWithoutAssert(accessorTag);
+    var itemModel = yield _category2ModelWithThrow(accessor.category);
+
+    var _criteria = { "tracer.ownerTag": accessorTag };
+    _.defaults(_criteria, criteria);
+    return yield itemModel.find(_criteria).count();
+};
+
+function* _isProtoOf(protoAccessorTag, accessorTag) {
+    try {
+        return yield _doCompareProto(accessorTag);
+    } catch (e) {
+        return false;
+    }
+
+    function* _doCompareProto(_accessorTag) {
+        var accessor = yield _getAccessorEditableOnlyProtoWithThrow(_accessorTag);
+        if (!accessor.proto || !accessor.proto.forward) {
+            return false;
+        }
+        if (accessor.proto.forward === protoAccessorTag) {
+            return true;
+        } else {
+            return yield _doCompareProto(accessor.proto.forward);
+
+        }
+    };
+
+};
+
+function* _category2ModelWithThrow(category) {
+
+    if (!_.isString(category)) {
+        var err = { no: exceptionMgr.parameterException, context: { category: category } };
+        throw err;
+    }
+    try {
+        var itemModel = mongoose.model(category);
+        return itemModel;
+    } catch (e) {
+        var err = { no: exceptionMgr.modelNotExist, context: { category: category, level: 7 } };
+        throw err;
+    }
+
+};
+
+function* _keepItemsCountInAccessorBelowWithThrow(accessorTag, criteria, maxNums, sort) {
+    var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+    var itemModel = yield _category2ModelWithThrow(accessor.category);
+
+    var _criteria = { "tracer.ownerTag": accessorTag };
+    _.defaults(_criteria, criteria);
+    var existNums = yield itemModel.find(_criteria).count();
+    if (existNums > maxNums) {
+        var invalidItemsNums = existNums - nums;
+        var invalidItems = yield itemModel.find(_criteria, { _id: 1 }).sort(sort).limit(invalidRecordsNums).exec();
+        //
+        yield itemModel.remove(invalidItems);
+        return maxNums;
+    } else {
+        return existNums;
+    }
+
+};
+
+
+
+
+function* _collapse2Proto(accessorTag, protoAccessorTag) {
+    if (!protoAccessorTag) { //默认为到rootaccessor。
+        var rootAccessorTagCfg = yield InitConfig.findOne(rootAccessorTagCfgCriteria);
+        protoAccessorTag = rootAccessorTagCfg.value;
+        //除自己外，将原型链上的所有accessor，标记为writeoncopy
+
+    } else {
+        var isInChain = yield _isProtoOf(protoAccessorTag, accessorTag);
+        if (!isInChain) {
+            return; //不做修改
+        }
+    }
+
+    return yield _doSetWriteOnCopyOnProto(accessorTag);
+
+
+    function* _doSetWriteOnCopyOnProto(_accessorTag) {
+        var _accessor = yield _getAccessorEditableOnlyProtoWithThrow(_accessorTag);
+        if (!_accessor.proto || !_accessor.proto.forward) {
+            return; //root accessor
+        }
+        var _directProtoAccessor = yield _getAccessorEditableOnlyProtoAndCategoryWithThrow(_accessor.proto.forward);
+        _directProtoAccessor.proto.writeOnCopy = true;
+        var newProtoAccessor = yield _newAccessorEditableWithThrow(_directProtoAccessor.category, _directProtoAccessor.proto.forward);
+        if (_directProtoAccessor.proto.association) { //把自己关联的拷贝
+            newProtoAccessor.proto.association = _directProtoAccessor.proto.association;
+        } else { //关联自己
+            newProtoAccessor.proto.association = _directProtoAccessor.thisTag;
+
+        }
+        yield newProtoAccessor.save();
+        _accessor.proto.forward = newProtoAccessor.thisTag;
+        yield _accessor.save();
+        yield _doSetWriteOnCopyOnProto(_accessor.proto.forward);
+
+    };
+
+};
+
+function* _doCopyOnWrite(accessorTag) {
+    var accessor = yield _getAccessorEditableOnlyProtoAndCategoryWithThrow(accessorTag);
+
+    var copyedAccessor = yield _newAccessorEditableWithThrow(accessor.category, accessor.proto.forward); //copyedAccessor's copyonWrite is null or false;
+    copyedAccessor.proto.copyOnWrite = true;
+    yield copyedAccessor.save();
+    yield _copyAllFromAccessorTo(accessorTag, copyedAccessor.thisTag);
+    //原先的关联改成关联到copyed。
+    yield _updateAccessorAssociationWithThrow(accessorTag, copyedAccessor.thisTag);
+    accessor.proto.copyOnWrite = false;
+    yield accessor.save();
+
+    function* _copyAllFromAccessorTo(fromAccessorTag, toAccessorTag, criteria, project) {
+        var fromAccessor = yield _getAccessorEditableOnlyCategoryWithThrow(fromAccessorTag);
+        var itemModel = yield _category2ModelWithThrow(accessor.category);
+        var _criteria = { "tracer.ownerTag": fromAccessorTag };
+        _.defaults(_criteria, criteria);
+        var _project = { _id: 0 };
+        _.defaults(_project, project);
+        var newItems = yield itemModel.find(_criteria, _project).exec();
+        yield itemModel.insertMany(newItems);
+        var _updated = { tracer: { ownerTag: toAccessorTag } };
+        yield itemModel.updateMany(newItems, { $set: _updated });
+    };
+
+    function* _updateAccessorAssociationWithThrow(oldAssocition, newAssociation) {
+        var _criteria = { "proto.association": oldAssocition };
+        var _updated = { proto: { association: newAssocition } };
+        yield Accessor.updateMany(_criteria, { $set: _updated });
+    }
+
+}
+
+
+/**
+ * 
+ * 
+ */
+//accessor
+module.exports.rootAccessorTag = async(_rootAccessorTag);
+module.exports.addAccessorWithThrow = async(_addAccessorWithThrow);
+module.exports.updateAccessorWithThrow = async(_updateAccessorWithThrow);
+
+function* _rootAccessorTag() {
+    var rootAccessorTag = yield _getSysConfigValue(rootAccessorTagCfgCriteria);
+    if (!rootAccessorTag) {
+        var accessor = new Accessor();
+        yield _initAccessor(accessor);
+        yield accessor.save();
+        return accessor.thisTag;
+    }
+    return rootAccessorTag;
+
+};
+
+function* _addAccessorWithThrow(modelName, protoAccessorTag) {
+    if (!protoAccessorTag) {
+        var rootAccessorTag = yield _getSysConfigValue(rootAccessorTagCfgCriteria);
+        protoAccessorTag = rootAccessorTag;
+    }
+    var _category = modelName;
+
+    try {
+        var itemModel = mongoose.model(_category); //不要删，如果_category 不存在产生异常。
+        var newAccessor = new Accessor();
+        yield _initAccessor(newAccessor);
+        newAccessor.category = _category;
+        newAccessor.proto.forward = protoAccessorTag; //产生原型链
+        yield newAccessor.save();
+        return newAccessor.thisTag;
+
+    } catch (e) {
+
+        var err = { no: exceptionMgr.parameterException, context: { category: modelName } };
+        throw err;
+
+    }
+};
+
+function* _updateAccessorWithThrow(accessorTag, updatedAccessorInfo) {
+    if (!_.isObject(updatedAccessorInfo) || updatedAccessorInfo._id) {
+        var err = { no: exceptionMgr.parameterException, context: { accessorInfo: updatedAccessorInfo } };
+        throw err;
+    }
+    var _criteria = { thisTag: accessorTag };
+    var _accessorInfo = {};
+    if (updatedAccessorInfo.proto && updatedAccessorInfo.proto.forward) {
+        var _accessor = yield _getAccessorEditableOnlyProtoWithThrow(accessorTag);
+        if (_accessor.proto.forward !== updatedAccessorInfo.proto.forward) {
+            _accessorInfo.timemark.forwardUpdated = Date.now();
+        }
+    }
+    _.defaults(_accessorInfo, updatedAccessorInfo);
+    yield Accessor.update(_criteria, { $set: _accessorInfo });
+
+};
+
+function* _initAccessor(accessor) {
+    accessor.thisTag = yield getUniqTag();
+    accessor.timemark.lastModifed = Date.now();
+};
+
+function* _getAccessorEditableOnlyProtoAndCategoryWithThrow(accessorTag) {
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, "proto.forward": 1, "category": 1 });
+    if (!accessor) {
+        var err = {
+            no: exceptionMgr.accessorNotExistException,
+            contex: {
+                accessor: accessorTag,
+                level: 7
+            }
+        };
+        throw (err);
+    }
+    return accessor;
+};
+
+function* _getAccessorEditableOnlyProtoWithThrow(accessorTag) {
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, "proto.forward": 1, "proto.writeOnCopy": 1 });
+    if (!accessor) {
+        var err = {
+            no: exceptionMgr.accessorNotExistException,
+            contex: {
+                accessor: accessorTag,
+                level: 7
+            }
+        };
+        throw (err);
+    }
+    return accessor;
+};
+
+function* _getAccessorEditableOnlyCategoryWithThrow(accessorTag) {
+    const accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, category: 1 });
+    if (!accessor) {
+        var err = {
+            no: exceptionMgr.accessorNotExistException,
+            contex: {
+                accessor: accessorTag,
+                level: 7
+            }
+        };
+        throw err;
+    }
+    return accessor;
+}
+
+function* _getAccessorEditableOnlySpecialWithThrow(accessorTag) {
+
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, special: 1 });
+    if (!accessor) {
+        var err = {
+            no: exceptionMgr.accessorNotExistException,
+            contex: {
+                accessor: accessorTag,
+                level: 7
+            }
+        };
+        throw (err);
+    }
+    return accessor;
+};
+
+function* _getAccessorEditableOnlyConcurrentWithThrow(accessorTag) {
+
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, concurrent: 1 });
+    if (!accessor) {
+        var err = {
+            no: exceptionMgr.accessorNotExistException,
+            contex: {
+                accessor: accessorTag,
+                level: 7
+            }
+        };
+        throw (err);
+    }
+    return accessor;
+};
+
+
+
+//initconfig
+module.exports.addSysConfigWithThrow = async(_addSysConfigWithThrow);
+module.exports.removeSysConfigWithThrow = async(_removeSysConfigWithThrow);
+module.exports.updateSysConfigWithThrow = async(_updateSysConfigWithThrow);
+module.exports.getSysConfigValue = async(_getSysConfigValue);
+
+function* _updateSysConfigWithThrow(criteria, value) {
+    if (!value) {
+        var err = { no: exceptionMgr.parameterException, context: { value: value } };
+        throw err;
+    }
+    var existCfg = yield InitConfig.findOne(criteria);
+    if (!existCfg) {
+        var err = { no: exceptionMgr.sysConfigNotExist, context: { criteria: criteria } };
+        throw err;
+    } else {
+        existCfg.value = value;
+        yield existCfg.save();
+    }
+};
+
+function* _addSysConfigWithThrow(criteria, value) {
+    if (!value) {
+        var err = { no: exceptionMgr.parameterException, context: { value: value } };
+        throw err;
+    }
+    var existCfg = yield InitConfig.findOne(criteria);
+    if (!existCfg) {
+        var newCfg = new InitConfig(criteria);
+        newCfg.value = value;
+        yield newCfg.save();
+    } else {
+        var err = { no: exceptionMgr.sysConfigNotExist, context: { criteria: criteria } };
+        throw err;
+    }
+};
+
+function* _removeSysConfigWithThrow(criteria) {
+    yield InitConfig.remove(criteria);
+};
+
+function* _getSysConfigValue(criteria) {
+    var existCfg = yield InitConfig.findOne(criteria);
+    if (!existCfg) {
+        return null;
+    } else {
+        return existCfg.value;
+    }
+};
+//initconfig
+
+
+
+// function* initPDCAccessor(accessor) {
+//     yield co(initAccessor(accessor));
+//     accessor.category = "PDC"; //status: OK,COMPUTING,
+//     accessor.special = { maxPDC: 10 };
+// }
+
+// function* initRecordAccessor(accessor) {
+//     yield co(initAccessor(accessor));
+//     accessor.category = "RECORD"; //status: OK,COMPUTING,
+
+// }
+
+
+
+// function* initLogAccessor(accessor) {
+//     yield co(initAccessor(accessor));
+//     accessor.category = "LOG"; //status: OK,COMPUTING,
+//     accessor.special = { logLevel: 7 };
+// }
+
+// function* initCalcRuleAccessor(accessor) {
+//     yield co(initAccessor(accessor));
+//     accessor.category = "RULE"; //status: OK,COMPUTING,
+
+// }
+
+// function* initTerminologyAccessor(accessor) {
+//     yield co(initAccessor(accessor));
+//     accessor.category = "TERMINOLOGY"; //status: OK,COMPUTING,
+// }
+
+// function* initIncubatorAccessor(accessor) {
+//     yield co(initAccessor(accessor));
+//     accessor.category = "INCUBATOR"; //status: OK,COMPUTING,
+
+// }
+
+
+
+/**
+ * 
+ * @param {*} modelName 访问控制块mongoose model 名。
+ * @param {*} accessorID 
+ * @param {*} context 
+ */
+
 
 
 /**
  * 
  * accessor 操作
  */
-module.exports.accessor = {
-    isProtoOf: async(isProtoOf),
-    assertAccessorExist: async(assertAccessorExist),
-    updateAccessorOnlySpecial: async(updateAccessorOnlySpecial),
-    //   getAccessorOnlySpecialEditable: async(getAccessorOnlySpecialEditableWithAssertWithThrow),
-    getAccessorOnlySpecialInEditable: async(getAccessorOnlySpecialInEditableWithAssertWithThrow),
-    // getAccessorOnlyProtoEditable: async(getAccessorEditableOnlyProtoWithAssertWithThrow),
-    // getAccessorOnlyProtoInEditable: async(getAccessorInEditableOnlyProtoWithAssertWithThrow),
-    // itemsCountInAccessor: async(itemsCountInAccessor), //查询条件个数
-    // keepItemsCountInAccessorBelow: async(keepItemsCountInAccessorBelow), //items不大于
-    firstNItemEditableInAccessor: async(firstNItemEditableInAccessor),
-    // newItemEditableInAccessor: async(newItemEditableInAccessor)
+// module.exports.accessor = {
+//     _isProtoOf: async(_isProtoOf),
+//     assertAccessorExist: async(assertAccessorExist),
+//     updateAccessorOnlySpecial: async(updateAccessorOnlySpecial),
+//     //   getAccessorOnlySpecialEditable: async(getAccessorOnlySpecialEditableWithAssertWithThrow),
+//     getAccessorOnlySpecialInEditable: async(getAccessorOnlySpecialInEditableWithAssertWithThrow),
+//     // getAccessorOnlyProtoEditable: async(getAccessorEditableOnlyProtoWithAssertWithThrow),
+//     // getAccessorOnlyProtoInEditable: async(getAccessorInEditableOnlyProtoWithAssertWithThrow),
+//     // itemsCountInAccessor: async(itemsCountInAccessor), //查询条件个数
+//     // keepItemsCountInAccessorBelow: async(keepItemsCountInAccessorBelow), //items不大于
+//     firstNItemEditableInAccessor: async(firstNItemEditableInAccessor),
+//     // newItemEditableInAccessor: async(newItemEditableInAccessor)
 
-};
+// };
 
 
 
@@ -296,31 +768,31 @@ module.exports.accessor = {
  *accessor查询 
  *
  */
-function* getAccessorEditableOnlyCategoryWithoutAssert(accessorTag) {
-    const accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, category: 1 });
-    return accessor;
-};
+// function* getAccessorEditableOnlyCategoryWithoutAssert(accessorTag) {
+//     const accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, category: 1 });
+//     return accessor;
+// };
 
 
 
-//return itemreference
-function* firstNItemEditableInAccessor(accessorTag, num, sort, criteria) {
-    var accessor = yield getAccessorEditableOnlyCategoryWithoutAssert(accessorTag);
-    if (!accessor) {
-        return null;
-    }
-    var itemModel = yield category2ModelWithThrow(accessor.category);
-    if (itemModel) {
-        var _criteria = { "tracer.ownerTag": accessorTag };
-        _.defaults(_criteria, criteria);
-        var items = yield itemModel.find(_criteria).sort(sort).limit(num).toArray();
-        return items;
+// //return itemreference
+// function* firstNItemEditableInAccessor(accessorTag, num, sort, criteria) {
+//     var accessor = yield getAccessorEditableOnlyCategoryWithoutAssert(accessorTag);
+//     if (!accessor) {
+//         return null;
+//     }
+//     var itemModel = yield _category2ModelWithThrow(accessor.category);
+//     if (itemModel) {
+//         var _criteria = { "tracer.ownerTag": accessorTag };
+//         _.defaults(_criteria, criteria);
+//         var items = yield itemModel.find(_criteria).sort(sort).limit(num).toArray();
+//         return items;
 
-    } else {
-        return null;
-    };
+//     } else {
+//         return null;
+//     };
 
-};
+// };
 
 
 
@@ -329,21 +801,21 @@ function* firstNItemEditableInAccessor(accessorTag, num, sort, criteria) {
 
 //
 
-function* updateAccessorOnlySpecial(accessorEditable, specialObject) {
-    assert(accessorEditable._id, `accessor=${accessorEditable.thisTag} must be editable.`)
-    accessorEditable.special = specialObject;
-    accessorEditable.markModified("special");
-    yield accessorEditable.save();
-    return accessorEditable;
-};
-//
+// function* updateAccessorOnlySpecial(accessorEditable, specialObject) {
+//     assert(accessorEditable._id, `accessor=${accessorEditable.thisTag} must be editable.`)
+//     accessorEditable.special = specialObject;
+//     accessorEditable.markModified("special");
+//     yield accessorEditable.save();
+//     return accessorEditable;
+// };
+// //
 
-function* getAccessorOnlySpecialInEditableWithAssertWithThrow(accessorTag) {
-    var accessor = yield getAccessorOnlySpecialEditableWithAssertWithThrow(accessorTag);
-    var po = accessor.toObject();
-    delete po._id;
-    return po;
-}
+// function* getAccessorOnlySpecialInEditableWithAssertWithThrow(accessorTag) {
+//     var accessor = yield getAccessorOnlySpecialEditableWithAssertWithThrow(accessorTag);
+//     var po = accessor.toObject();
+//     delete po._id;
+//     return po;
+// }
 
 /**
  * 
@@ -366,36 +838,36 @@ function* getAccessorOnlySpecialInEditableWithAssertWithThrow(accessorTag) {
 // };
 //
 
-function* getAccessorInEditableOnlyProtoWithAssertWithThrow(accessorTag) {
-    var accessor = yield getAccessorEditableOnlyProtoWithAssertWithThrow(accessorTag);
-    delete accessor._id;
-    return accessor;
-};
+// function* getAccessorInEditableOnlyProtoWithAssertWithThrow(accessorTag) {
+//     var accessor = yield getAccessorEditableOnlyProtoWithAssertWithThrow(accessorTag);
+//     delete accessor._id;
+//     return accessor;
+// };
 
 
 /**
  * 
  * incubator
  */
-module.exports.incubator = {
-    getIncubatorCoreEditable: async(getIncubatorCoreEditableWithAssertWithThrow), //default
-    getIncubatorCoreEditableWithAssertWithThrow: async(getIncubatorCoreEditableWithAssertWithThrow),
-    //  getIncubatorCoreEditableWithAssertWithoutThrow = async(getIncubatorCoreEditableWithAssertWithoutThrow),
-    getIncubatorCoreInEditable: async(getIncubatorCoreInEditableWithAssertWithThrow), //default
-    getIncubatorCoreInEditableWithAssertWithThrow: async(getIncubatorCoreInEditableWithAssertWithThrow),
-    //   getIncubatorCoreInEditableWithAssertWithoutThrow = async(getIncubatorCoreInEditableWithAssertWithoutThrow)
+// module.exports.incubator = {
+//     getIncubatorCoreEditable: async(getIncubatorCoreEditableWithAssertWithThrow), //default
+//     getIncubatorCoreEditableWithAssertWithThrow: async(getIncubatorCoreEditableWithAssertWithThrow),
+//     //  getIncubatorCoreEditableWithAssertWithoutThrow = async(getIncubatorCoreEditableWithAssertWithoutThrow),
+//     getIncubatorCoreInEditable: async(getIncubatorCoreInEditableWithAssertWithThrow), //default
+//     getIncubatorCoreInEditableWithAssertWithThrow: async(getIncubatorCoreInEditableWithAssertWithThrow),
+//     //   getIncubatorCoreInEditableWithAssertWithoutThrow = async(getIncubatorCoreInEditableWithAssertWithoutThrow)
 
-};
+// };
 
-function* getIncubatorCoreEditableWithAssertWithThrow(inCubatorAccessorTag, incubatorName, context) {
-    yield assertAccessorExist(inCubatorAccessorTag);
-    var incubator = yield Incubator.findOne({ name: incubatorName, "tracer.ownerTag": inCubatorAccessorTag }, {
-        "container.PDCAccessorTag": 1,
-        "container.recordAccessorTag": 1,
-        "strategy.calcRuleAccessorTag": 1
-    });
-    return incubator;
-};
+// function* getIncubatorCoreEditableWithAssertWithThrow(inCubatorAccessorTag, incubatorName, context) {
+//     yield assertAccessorExist(inCubatorAccessorTag);
+//     var incubator = yield Incubator.findOne({ name: incubatorName, "tracer.ownerTag": inCubatorAccessorTag }, {
+//         "container.PDCAccessorTag": 1,
+//         "container.recordAccessorTag": 1,
+//         "strategy.calcRuleAccessorTag": 1
+//     });
+//     return incubator;
+// };
 
 // function* getIncubatorCoreEditableWithAssertWithoutThrow(inCubatorAccessorTag, incubatorName) {
 //     try {
@@ -409,18 +881,18 @@ function* getIncubatorCoreEditableWithAssertWithThrow(inCubatorAccessorTag, incu
 
 // }
 
-function* getIncubatorCoreInEditableWithAssertWithThrow(inCubatorAccessorTag, incubatorName) {
-    var incubator = yield getIncubatorCoreEditableWithAssertWithThrow(inCubatorAccessorTag, incubatorName);
-    if (!incubator) {
-        var err = { no: exceptionMgr.incubatorNotExistException, context: { incubator: incubatorName, level: 7 } };
-        throw (err);
-    }
-    var po = incubator.toObject();
-    delete po._id;
-    return po;
+// function* getIncubatorCoreInEditableWithAssertWithThrow(inCubatorAccessorTag, incubatorName) {
+//     var incubator = yield getIncubatorCoreEditableWithAssertWithThrow(inCubatorAccessorTag, incubatorName);
+//     if (!incubator) {
+//         var err = { no: exceptionMgr.incubatorNotExistException, context: { incubator: incubatorName, level: 7 } };
+//         throw (err);
+//     }
+//     var po = incubator.toObject();
+//     delete po._id;
+//     return po;
 
 
-};
+// };
 
 // getIncubatorCoreInEditableWithAssertWithoutThrow(inCubatorAccessorTag, incubatorName) {
 //     try {
@@ -438,43 +910,30 @@ function* getIncubatorCoreInEditableWithAssertWithThrow(inCubatorAccessorTag, in
  * ruleDescriptor
  */
 
-module.exports.ruleDescriptor = {
-    // getRuleDescriptorCoreEditable: async(getRuleDescriptorCoreEditableWithAssertWithThrow), //default
-    // getRuleDescriptorCoreEditableWithAssertWithThrow: async(getRuleDescriptorCoreEditableWithAssertWithThrow),
-    //  getRuleDescriptorCoreEditableWithAssertWithoutThrow: async(getRuleDescriptorCoreEditableWithAssertWithoutThrow),
-    //
-    getRuleDescriptorCoreInEditable: async(getRuleDescriptorCoreInEditableWithAssertWithThrow), //default 
-    getRuleDescriptorCoreInEditableWithAssertWithThrow: async(getRuleDescriptorCoreInEditableWithAssertWithThrow),
-    // getRuleDescriptorCoreInEditableWithAssertWithoutThrow: async(getRuleDescriptorCoreInEditableWithAssertWithoutThrow)
-};
+// module.exports.ruleDescriptor = {
+//     // getRuleDescriptorCoreEditable: async(getRuleDescriptorCoreEditableWithAssertWithThrow), //default
+//     // getRuleDescriptorCoreEditableWithAssertWithThrow: async(getRuleDescriptorCoreEditableWithAssertWithThrow),
+//     //  getRuleDescriptorCoreEditableWithAssertWithoutThrow: async(getRuleDescriptorCoreEditableWithAssertWithoutThrow),
+//     //
+//     getRuleDescriptorCoreInEditable: async(getRuleDescriptorCoreInEditableWithAssertWithThrow), //default 
+//     getRuleDescriptorCoreInEditableWithAssertWithThrow: async(getRuleDescriptorCoreInEditableWithAssertWithThrow),
+//     // getRuleDescriptorCoreInEditableWithAssertWithoutThrow: async(getRuleDescriptorCoreInEditableWithAssertWithoutThrow)
+// };
 
 
 
 
 
-function* getRuleDescriptorCoreInEditableWithAssertWithThrow(ruleAccessorTag, ruleName) {
-    var ruleDesc = yield getRuleDescriptorCoreEditableWithAssertWithThrow(ruleAccessorTag, ruleName);
-    if (!ruleDesc) {
-        return null;
-    }
-    delete ruleDesc._id;
-    return ruleDesc;
-};
+// function* getRuleDescriptorCoreInEditableWithAssertWithThrow(ruleAccessorTag, ruleName) {
+//     var ruleDesc = yield getRuleDescriptorCoreEditableWithAssertWithThrow(ruleAccessorTag, ruleName);
+//     if (!ruleDesc) {
+//         return null;
+//     }
+//     delete ruleDesc._id;
+//     return ruleDesc;
+// };
 
 
-function* assertAccessorExist(accessorTag) {
-    const accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1 });
-    if (!accessor) {
-        var err = {
-            no: exceptionMgr.accessorNotExistException,
-            contex: {
-                accessor: accessorTag,
-                level: 7
-            }
-        };
-        throw (err);
-    };
-};
 
 //
 /**
@@ -483,461 +942,140 @@ function* assertAccessorExist(accessorTag) {
  * @param {*} accessorTag 
  */
 //refactory
-function* isProtoOf(protoAccessorTag, accessorTag) {
-    try {
-        return yield(accessorTag);
-    } catch (e) {
-        return false;
-    }
 
-    function* _doCompareProto(_accessorTag) {
-        var accessor = yield getAccessorEditableOnlyProtoWithThrow(_accessorTag);
-        if (!accessor.proto || !accessor.proto.forward) {
-            return false;
-        }
-        if (accessor.proto.forward === protoAccessorTag) {
-            return true;
-        } else {
-            return yield _doCompareProto(accessor.proto.forward);
+// function* _firstNSortedItemsCoreEditableInAccessorWithThrow(accessorTag, criteria, num, sort) {
+//     var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+//     var itemModel = yield _category2ModelWithThrow(accessor.category);
 
-        }
-    };
+//     var _coreProject = itemModel.coreProject;
+//     var _criteria = { "tracer.ownerTag": accessorTag };
+//     _.defaults(_criteria, criteria);
 
-};
+//     var _num = 1;
+//     if (num) {
+//         _num = num;
+//     }
+//     var _sort = {};
+//     _.defaults(_sort, sort);
+//     //
+//     var items = yield itemModel.find(_criteria, _coreProject).sort(_sort).limit(_num);
+//     return items;
+// };
 
-
-function* category2ModelWithThrow(category) {
-    var itemModel = null;
-    switch (category) {
-        case "PDC":
-            itemModel = PDCStatus;
-            break;
-        case "RECORD":
-            itemModel = Record;
-            break;
-        case "RULE":
-            itemModel = RuleDescriptor;
-            break;
-        case "TERMINOLOGY":
-            itemModel = Terminology;
-            break;
-        case "INCUBATOR":
-            itemModel = Incubator;
-            break;
-        default:
-            {
-                var err = { no: exceptionMgr.modelNotExist, context: { category: category, level: 7 } };
-                throw err;
-            }
-
-    }
-    return itemModel;
-};
-
-function* updateAccessorAssociationWithThrow(oldAssocition, newAssociation) {
-    var _criteria = { "proto.association": oldAssocition };
-    var updated = { "proto.association": newAssocition };
-    yield Accessor.update(_criteria, { $set: updated });
-}
-
-function* getAccessorEditableOnlyCategoryWithThrow(accessorTag) {
-    const accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, category: 1 });
-    if (!accessor) {
-        var err = {
-            no: exceptionMgr.accessorNotExistException,
-            contex: {
-                accessor: accessorTag,
-                level: 7
-            }
-        };
-        throw err;
-    }
-    return accessor;
-}
-
-function* getAccessorEditableOnlySpecialWithThrow(accessorTag) {
-
-    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, special: 1 });
-    if (!accessor) {
-        var err = {
-            no: exceptionMgr.accessorNotExistException,
-            contex: {
-                accessor: accessorTag,
-                level: 7
-            }
-        };
-        throw (err);
-    }
-    return accessor;
-};
-
-function* getAccessorEditableOnlyConcurrentWithThrow(accessorTag) {
-
-    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, concurrent: 1 });
-    if (!accessor) {
-        var err = {
-            no: exceptionMgr.accessorNotExistException,
-            contex: {
-                accessor: accessorTag,
-                level: 7
-            }
-        };
-        throw (err);
-    }
-    return accessor;
-};
-
-function* firstNSortedItemsCoreEditableInAccessorWithThrow(accessorTag, criteria, num, sort) {
-    var accessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
-    var itemModel = yield category2ModelWithThrow(accessor.category);
-
-    var _coreProject = itemModel.coreProject;
-    var _criteria = { "tracer.ownerTag": accessorTag };
-    _.defaults(_criteria, criteria);
-
-    var _num = 1;
-    if (num) {
-        _num = num;
-    }
-    var _sort = {};
-    _.defaults(_sort, sort);
-    //
-    var items = yield itemModel.find(_criteria, _coreProject).sort(_sort).limit(_num);
-    return items;
-
-};
-
-function* allItemsEditableInAccessorWithThrow(accessorTag, criteria, project, sort) {
-    var accessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
-    var itemModel = yield category2ModelWithThrow(accessor.category);
+// function* _allItemsEditableInAccessorWithThrow(accessorTag, criteria, project, sort) {
+//     var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+//     var itemModel = yield _category2ModelWithThrow(accessor.category);
 
 
-    var _criteria = { "tracer.ownerTag": accessorTag };
-    _.defaults(_criteria, criteria);
-    var _project = {};
-    _.defaults(_project, project);
-    var _sort = {};
-    _.defaults(_sort, sort);
-    //
-    var items = yield itemModel.find(_criteria, _coreProject).sort(_sort).exec();
-    return items;
+//     var _criteria = { "tracer.ownerTag": accessorTag };
+//     _.defaults(_criteria, criteria);
+//     var _project = {};
+//     _.defaults(_project, project);
+//     var _sort = {};
+//     _.defaults(_sort, sort);
+//     //
+//     var items = yield itemModel.find(_criteria, _coreProject).sort(_sort).exec();
+//     return items;
 
-};
-
-function* updateItemsInAccessorWithThrow(accessorTag, criteria, updated) {
-    var accessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
-    var itemModel = yield category2ModelWithThrow(accessor.category);
+// };
 
 
-    var _criteria = { "tracer.ownerTag": accessorTag };
-    _.defaults(_criteria, criteria);
-    yield itemModel.update(_criteria, { $set: updated });
-
-};
 //return existNum;
-function* keepItemsCountInAccessorBelowWithThrow(accessorTag, criteria, maxNums, sort) {
-    var accessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
-    var itemModel = yield category2ModelWithThrow(accessor.category);
-
-    var _criteria = { "tracer.ownerTag": accessorTag };
-    _.defaults(_criteria, criteria);
-    var existNums = yield itemModel.find(_criteria).count();
-    if (existNums > maxNums) {
-        var invalidItemsNums = existNums - nums;
-        var invalidItems = yield itemModel.find(_criteria, { _id: 1 }).sort(sort).limit(invalidRecordsNums).exec();
-        //
-        yield itemModel.remove(invalidItems);
-        return maxNums;
-    } else {
-        return existNums;
-    }
-
-};
-
-function* itemsCountInAccessorWithThrow(accessorTag, criteria) {
-    var accessor = yield getAccessorEditableOnlyCategoryWithoutAssert(accessorTag);
-    var itemModel = yield category2ModelWithThrow(accessor.category);
-
-    var _criteria = { "tracer.ownerTag": accessorTag };
-    _.defaults(_criteria, criteria);
-    return yield itemModel.find(_criteria).count();
-};
 
 
-function* newItemEditableInAccessorWithThrow(accessorTag) {
-    var accessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
 
-    var itemModel = yield category2ModelWithThrow(accessor.category);
-    var newItem = new itemModel({ "tracer.ownerTag": accessorTag });
-    return newItem;
+// function* _newItemEditableInAccessorWithThrow(accessorTag, newItemInfo) {
+//     if (!_.isObject(newItemInfo) || newItemInfo._id) { //不允许设定_id值。
+//         var err = { no: exceptionMgr.parameterException, context: { itemInfo: newItemInfo } };
+//         throw err;
+//     }
+//     var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
 
-};
+//     var itemModel = yield _category2ModelWithThrow(accessor.category);
+//     var _newItemInfo = { "tracer.ownerTag": accessorTag };
+//     _.defaults(_newItemInfo, newItemInfo);
+//     var newItem = new itemModel(_newItemInfo);
+//     yield newItem.save();
+//     return newItem;
+// };
 
-function* getAccessorEditableOnlyProtoAndCategoryWithThrow(accessorTag) {
-    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, "proto.forward": 1, "category": 1 });
-    if (!accessor) {
-        var err = {
-            no: exceptionMgr.accessorNotExistException,
-            contex: {
-                accessor: accessorTag,
-                level: 7
-            }
-        };
-        throw (err);
-    }
-    return accessor;
-};
+// function* newItemReadOnlyInAccessorWithThrow(accessorTag, newItemInfo) {
+//     if (newItemInfo._id) { //不允许设定_id值。
+//         var err = { no: exceptionMgr.parameterException, context: { itemInfo: newItemInfo } };
+//         throw err;
+//     }
+//     var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+//     var itemModel = yield _category2ModelWithThrow(accessor.category);
+//     var _newItemInfo = { "tracer.ownerTag": accessorTag };
+//     _.defaults(_newItemInfo, newItemInfo);
+//     var newItem = new itemModel(_newItemInfo);
+//     yield newItem.save();
+//     var po = newItem.toObject();
+//     delete po._id; //不能根据_id 存储。
+//     return po;
+// };
 
-function* getAccessorEditableOnlyProtoWithThrow(accessorTag) {
-    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, "proto.forward": 1, "proto.writeOnCopy": 1 });
-    if (!accessor) {
-        var err = {
-            no: exceptionMgr.accessorNotExistException,
-            contex: {
-                accessor: accessorTag,
-                level: 7
-            }
-        };
-        throw (err);
-    }
-    return accessor;
-};
+// function* updateItemsInAccessorWithThrow(accessorTag, criteria, updated) {
+//     var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+//     var itemModel = yield _category2ModelWithThrow(accessor.category);
+//     var _criteria = { "tracer.ownerTag": accessorTag };
+//     _.defaults(_criteria, criteria);
+//     yield itemModel.update(_criteria, { $set: updated });
 
-function* copyAllFromAccessorTo(fromAccessorTag, toAccessorTag, criteria, project) {
-    var fromAccessor = yield getAccessorEditableOnlyCategoryWithThrow(fromAccessorTag);
-    var itemModel = yield category2ModelWithThrow(accessor.category);
-    var _criteria = { "tracer.ownerTag": fromAccessorTag };
-    _.defaults(_criteria, criteria);
-    var _project = { _id: 0 };
-    _.defaults(_project, project);
-    var newItems = yield itemModel.find(_criteria, _project).exec();
-    yield itemModel.insertMany(newItems);
-    yield itemModel.update(newItems, { $set: { "tracer.ownerTag": toAccessorTag } });
-};
-
-function* theOneItemCoreReadOnlyInProtoAccessorWithThrow(accessorTag, criteria) {
-    var rootAccessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
-    var itemModel = yield category2ModelWithThrow(rootAccessor.category);
-    var coreProject = itemModel.coreProject;
-    var _coreProject = { _id: 0 }; //readonly
-    var resultItem = yield _doQueryInProtoChain(accessorTag);
-    if (resultItem) {
-        resultItem.tracer = { ownerTag: accessorTag };
-
-    }
-    return resultItem;
+// };
 
 
-    function* _doQueryInProtoChain(_accessorTag) {
-        var _criteria = {};
-        var accessorWithProto = yield getAccessorEditableOnlyProtoWithThrow(_accessorTag);
-        if (accessorWithProto.association) { //如果有关联，说明这个proto链是专属的，associated改变时，本链不跟随改变。
-            _criteria.tracer.ownerTag = accessorWithProto.association;
-        } else {
-            _criteria.tracer = { ownerTag: _accessorTag };
-        }
-        _.defaults(_criteria, criteria);
-        var item = yield itemModel.findOne(_criteria, _coreProject);
-        if (!item) {
-            if (!accessorWithProto.proto || !accessorWithProto.proto.forward) {
-                return null;
-            } else {
-                return yield _doQueryInProtoChain(accessorWithProto.proto.forward)
-            }
-        }
-        return item;
-    };
-};
-
-function* theOneItemEditableInAccessorWithThrow(accessorTag, criteria, project) {
-    var accessor = yield getAccessorEditableOnlyCategoryWithThrow(accessorTag);
-    var itemModel = yield category2ModelWithThrow(accessor.category);
-    var _project = { _id: 1 };
-    _.defaults(_project, project);
-    var _criteria = { "tracer.ownerTag": accessorTag };
-    _.defaults(_criteria, criteria);
-    var resultItem = yield itemModel.findOne(_criteria, _project);;
-    return resultItem;
-};
-
-function* collapse2Proto(accessorTag, protoAccessorTag) {
-    if (!protoAccessorTag) { //默认为到rootaccessor。
-        var rootAccessorTagCfg = yield InitConfig.findOne(rootAccessorTagCfgCriteria);
-        protoAccessorTag = rootAccessorTagCfg.value;
-        //除自己外，将原型链上的所有accessor，标记为writeoncopy
-
-    } else {
-        var isInChain = yield isProtoOf(protoAccessorTag, accessorTag);
-        if (!isInChain) {
-            return; //不做修改
-        }
-    }
-
-    return yield _doSetWriteOnCopyOnProto(accessorTag);
 
 
-    function* _doSetWriteOnCopyOnProto(_accessorTag) {
-        var _accessor = yield getAccessorEditableOnlyProtoWithThrow(_accessorTag);
-        if (!_accessor.proto || !_accessor.proto.forward) {
-            return; //root accessor
-        }
-        var _directProtoAccessor = yield getAccessorEditableOnlyProtoAndCategoryWithThrow(_accessor.proto.forward);
-        _directProtoAccessor.proto.writeOnCopy = true;
-        var newProtoAccessor = yield newAccessorEditable(_directProtoAccessor.category, _directProtoAccessor.proto.forward);
-        if (_directProtoAccessor.proto.association) { //把自己关联的拷贝
-            newProtoAccessor.proto.association = _directProtoAccessor.proto.association;
-        } else { //关联自己
-            newProtoAccessor.proto.association = _directProtoAccessor.thisTag;
 
-        }
-        yield newProtoAccessor.save();
-        _accessor.proto.forward = newProtoAccessor.thisTag;
-        yield _accessor.save();
-        yield _doSetWriteOnCopyOnProto(_accessor.proto.forward);
 
-    };
+// function* theOneItemCoreReadOnlyInProtoAccessorWithThrow(accessorTag, criteria) {
+//     var rootAccessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+//     var itemModel = yield _category2ModelWithThrow(rootAccessor.category);
+//     var coreProject = itemModel.coreProject;
+//     var _coreProject = { _id: 0 }; //readonly
+//     var resultItem = yield _doQueryInProtoChain(accessorTag);
+//     if (resultItem) {
+//         resultItem.tracer = { ownerTag: accessorTag };
 
-};
+//     }
+//     return resultItem;
+
+
+//     function* _doQueryInProtoChain(_accessorTag) {
+//         var _criteria = {};
+//         var accessorWithProto = yield _getAccessorEditableOnlyProtoWithThrow(_accessorTag);
+//         if (accessorWithProto.association) { //如果有关联，说明这个proto链是专属的，associated改变时，本链不跟随改变。
+//             _criteria.tracer.ownerTag = accessorWithProto.association;
+//         } else {
+//             _criteria.tracer = { ownerTag: _accessorTag };
+//         }
+//         _.defaults(_criteria, criteria);
+//         var item = yield itemModel.findOne(_criteria, _coreProject);
+//         if (!item) {
+//             if (!accessorWithProto.proto || !accessorWithProto.proto.forward) {
+//                 return null;
+//             } else {
+//                 return yield _doQueryInProtoChain(accessorWithProto.proto.forward)
+//             }
+//         }
+//         return item;
+//     };
+// };
+
+// function* _theOneItemEditableInAccessorWithThrow(accessorTag, criteria, project) {
+//     var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
+//     var itemModel = yield _category2ModelWithThrow(accessor.category);
+//     var _project = { _id: 1 };
+//     _.defaults(_project, project);
+//     var _criteria = { "tracer.ownerTag": accessorTag };
+//     _.defaults(_criteria, criteria);
+//     var resultItem = yield itemModel.findOne(_criteria, _project);;
+//     return resultItem;
+// };
 
 
 //return a new accessor
 //垃圾收集，没有forward指向的，或是自己没有指向别人的，都是垃圾，定时收集。
 
-function* addItemInAccessorWithThrow(accessorTag, item) { //complicated.  //update，add  删除规则是没有必要且不允许的。
-    if (item._id) { //不允许通过id修改
-        var err = { no: exceptionMgr.parameterException, context: { parameter: item } };
-        throw err;
-    }
-
-    var accessor = yield getAccessorEditableOnlyProtoWithThrow(accessorTag);
-    var copyOnWrite = accessor.proto.copyOnWrite;
-    if (copyOnWrite) {
-        var copyedAccessor = yield newAccessorEditable(accessor.category, accessor.proto.forward); //copyedAccessor's copyonWrite is null or false;
-        yield copyedAccessor.save();
-        yield copyAllFromAccessorTo(accessorTag, copyedAccessor.thisTag);
-        //原先的关联改成关联到copyed。
-        yield updateAccessorAssociationWithThrow(accessorTag, copyedAccessor.thisTag);
-
-        var itemInAccessor = yield newItemEditableInAccessorWithThrow(accessor.thisTag);
-        for (key in item) {
-            if (Object.prototype.hasOwnProperty.apply(item, key)) { //防止item被污染
-                itemInAccessor[key] = item.key;
-            }
-        }
-        yield itemInAccessor.save();
-        //返回新的accessorTag
-
-    } else {
-
-        var itemInAccessor = yield newItemEditableInAccessorWithThrow(accessorTag);
-
-        //应用时，按需加锁修改，添加。unsafety.
-        for (key in item) {
-            if (key !== "_id" && Object.prototype.hasOwnProperty.call(item, key)) { //防止item被污染
-                itemInAccessor[key] = item[key];
-            }
-        }
-        yield itemInAccessor.save();
-    }
-
-};
-
-function* updateItemInAccessorWithThrow(accessorTag, criteria, item) { //complicated.  //update，add  删除规则是没有必要且不允许的。
-    if (item._id) { //不允许通过id修改
-        var err = { no: exceptionMgr.parameterException, context: { parameter: item } };
-        throw err;
-    }
-
-    var accessor = yield getAccessorEditableOnlyProtoWithThrow(accessorTag);
-    var copyOnWrite = accessor.proto.copyOnWrite;
-    if (copyOnWrite) {
-        var copyedAccessor = yield newAccessorEditable(accessor.category, accessor.proto.forward); //copyedAccessor's copyonWrite is null or false;
-        yield copyedAccessor.save();
-        yield copyAllFromAccessorTo(accessorTag, copyedAccessor.thisTag);
-
-        var itemInAccessor = yield theOneItemEditableInAccessorWithThrow(copyedAccessor.thisTag, criteria); //不在原型中
-        if (!itemInAccessor) { //添加新的item
-            itemInAccessor = yield newItemEditableInAccessorWithThrow(copyedAccessor.thisTag);
-        }
-
-        for (key in item) {
-            if (Object.prototype.hasOwnProperty.apply(item, key)) { //防止item被污染
-                itemInAccessor[key] = item.key;
-            }
-        }
-        itemInAccessor.save();
-        return copyedAccessor.thisTag; //返回新的accessorTag
-
-    } else {
-
-        var itemInAccessor = yield theOneItemEditableInAccessorWithThrow(accessorTag, criteria);
-        if (!itemInAccessor) { //添加新的item
-            itemInAccessor = yield newItemEditableInAccessorWithThrow(accessorTag);
-        }
-
-        //应用时，按需加锁修改，添加。unsafety.
-        for (key in item) {
-            if (key !== "_id" && Object.prototype.hasOwnProperty.apply(item, key)) { //防止item被污染
-                itemInAccessor[key] = item.key;
-            }
-        }
-        itemInAccessor.save();
-        return accessor.thisTag;
-    }
-
-
-
-};
-
-function* newNullAccessorEditable() {
-    var accessor = new Accessor();
-    yield initAccessor(accessor);
-    return accessor;
-};
-
-function* newAccessorEditable(category, protoAccessorTag) {
-    if (!protoAccessorTag) {
-        var rootAccessorTagCfg = yield InitConfig.findOne(rootAccessorTagCfgCriteria);
-        protoAccessorTag = rootAccessorTagCfg.value;
-    }
-    var _category = category;
-    if (_.isFunction(category)) {
-        _category = category();
-    };
-    var newAccessor = new Accessor();
-    newAccessor.proto.forward = protoAccessorTag; //产生原型链
-    switch (_category) {
-        case "PDC":
-            yield initPDCAccessor(newAccessor);
-            break;
-        case "RECORD":
-            yield initRecordAccessor(newAccessor);
-            break;
-        case "RULE":
-            yield initCalcRuleAccessor(newAccessor);
-            break;
-        case "TERMINOLOGY":
-            yield initTerminologyAccessor(newAccessor);
-            break;
-        case "INCUBATOR":
-            yield initIncubatorAccessor(newAccessor);
-            break;
-        default:
-            return null;
-    }
-    return newAccessor;
-
-};
-//
-module.exports.firstNSortedItemsCoreEditableInAccessorWithThrow = async(firstNSortedItemsCoreEditableInAccessorWithThrow);
-module.exports.getAccessorEditableOnlySpecialWithThrow = async(getAccessorEditableOnlySpecialWithThrow);
-module.exports.getAccessorEditableOnlyProtoWithThrow = async(getAccessorEditableOnlyProtoWithThrow);
-module.exports.itemsCountInAccessorWithThrow = async(itemsCountInAccessorWithThrow);
-module.exports.keepItemsCountInAccessorBelowWithThrow = async(keepItemsCountInAccessorBelowWithThrow);
-module.exports.newItemEditableInAccessorWithThrow = async(newItemEditableInAccessorWithThrow);
-module.exports.theOneItemCoreReadOnlyInProtoAccessorWithThrow = async(theOneItemCoreReadOnlyInProtoAccessorWithThrow);
-module.exports.theOneItemEditableInAccessorWithThrow = async(theOneItemEditableInAccessorWithThrow);
-module.exports.newNullAccessor = async(newNullAccessorEditable);
-module.exports.newAccessorEditable = async(newAccessorEditable);
-module.exports.updateItemInAccessorWithThrow = async(updateItemInAccessorWithThrow);
-module.exports.addItemInAccessorWithThrow = async(addItemInAccessorWithThrow);
+//iteminAccessor

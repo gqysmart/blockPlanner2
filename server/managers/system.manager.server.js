@@ -19,11 +19,11 @@ const appDbConnectString = sysConfig.appdb.connectString;
 const models = path.join(__dirname, "..", "models");
 const dbMgr = require("./db.manager.server");
 const termMgr = require("./terminology.manager.server");
+const ruleMgr = require("./rule.manager.server");
 const logManager = require("./log.manager.server");
 const recursive = require("recursive-readdir");
 
 //
-
 const costClassesRelation = "architecture.costClasses" + version;
 const termCollection = "architecture.terminology" + version;
 const costCalRules = "architecture.costCalRules" + version;
@@ -31,14 +31,6 @@ const costCalRules = "architecture.costCalRules" + version;
 //是在maincluster中运行，没有加载mongoose model，需另加
 
 // mongoose model
-const mongoose = require("mongoose");
-mongoose.connect(appDbConnectString);
-const InitConfig = mongoose.model("InitConfig");
-const Log = mongoose.model("Log");
-const Accessor = mongoose.model("Accessor");
-const Terminology = mongoose.model("Terminology");
-const CalcRuleDescriptor = mongoose.model("CalcRuleDescriptor");
-
 //
 const initedCfgCriteria = dbMgr.sysinitedCfgCriteria;
 const rootCalcRuleIDCfgCriteria = dbMgr.rootCalcRuleAccessorTagCfgCriteria;
@@ -49,29 +41,25 @@ const rootAccessorTagCfgCriteria = dbMgr.rootAccessorTagCfgCriteria;
 //
 module.exports.init = async(function*(cb) {
     ////system inited
-    var initedCfg = yield InitConfig.findOne(initedCfgCriteria);
+    const mongoose = require("mongoose");
+    mongoose.connect(appDbConnectString);
+    var initedCfg = yield dbMgr.getSysConfigValue(initedCfgCriteria);
     if (!initedCfg) {
         try {
             yield co(initProtoChain());
             //   yield co(initSystemLog()); //1
             yield co(initTerminologyDBFromLocale());
             // yield co(initTerminologyDBFromRemote());
-            yield co(initCalcRuleDB());
-            initedCfg = new InitConfig(initedCfgCriteria);
-            initedCfg.value = true;
-            yield initedCfg.save();
-
+            //      yield co(initCalcRuleDB());
+            yield co(initRuleDBFromLocale());
+            yield co(initOrgnizerDBFromLocale());
+            yield dbMgr.addSysConfigWithThrow(initedCfgCriteria, true);
 
         } catch (e) {
 
-            yield Terminology.remove();
-            yield InitConfig.remove()
-            yield CalcRuleDescriptor.remove();
-            throw (e);
+            console.log("init error!");
 
-        } finally {
-            console.log("times");
-        }
+        } finally {}
 
 
     }
@@ -83,13 +71,8 @@ module.exports.init = async(function*(cb) {
 //
 
 function* initProtoChain() {
-    var rootAccessor = yield dbMgr.newNullAccessor();
-    rootAccessor.category = "ROOT";
-
-    var rootAccessorTagCfg = new InitConfig(rootAccessorTagCfgCriteria);
-    rootAccessorTagCfg.value = rootAccessor.thisTag;
-    yield rootAccessorTagCfg.save();
-    yield rootAccessor.save();
+    var rootAccesorTag = yield dbMgr.rootAccessorTag();
+    yield dbMgr.addSysConfigWithThrow(rootAccessorTagCfgCriteria, rootAccesorTag);
 };
 
 function* initCalcRuleDB() {
@@ -161,36 +144,77 @@ function* initTerminologyDBFromRemote() {
 
 function* initTerminologyDBFromLocale() {
 
-    var terminologyAccessorTagCfg = yield InitConfig.findOne(terminologyAccessorTagCriteria, { value: 1 }).exec();
-    if (!terminologyAccessorTagCfg) { //copy form systmemb db
-        var sysTerminologyAccessor = yield dbMgr.newAccessorEditable("TERMINOLOGY");
-        var sysTerminologyAccessorTag = sysTerminologyAccessor.thisTag;
-        yield sysTerminologyAccessor.save();
-        terminologyAccessorTagCfg = new InitConfig(terminologyAccessorTagCriteria);
-        terminologyAccessorTagCfg.value = sysTerminologyAccessorTag;
-        yield terminologyAccessorTagCfg.save();
+    var terminologyAccessorTag = yield dbMgr.getSysConfigValue(terminologyAccessorTagCriteria);
+    if (!terminologyAccessorTag) { //copy form systmemb db
+        var sysTerminologyAccessorTag = yield dbMgr.addAccessorWithThrow("Terminology");
+        yield dbMgr.addSysConfigWithThrow(terminologyAccessorTagCriteria, sysTerminologyAccessorTag);
+
         var rulesPath = path.join(__dirname, "..", "rules");
         recursive(rulesPath, [".*"], function(err, files) {
             for (let i = 0; i < files.length; i++) {
                 var file = files[i];
                 co(function*() {
-
                     var jsonRules = require(file);
-                    for (let i = 0; i < jsonRules.length; i++) {
-
-                        yield termMgr.addTerminologyByRuleDefine(sysTerminologyAccessorTag, jsonRules[i]);
-
-                    }
+                    yield termMgr.addTerminologiesByRuleDefine(sysTerminologyAccessorTag, jsonRules);
 
                 });
-
-
             }
 
         });
 
+    }
+    yield doWait(3); //笨办法。
+    function* doWait(sec) {
+        var aPromise = new Promise(function(resolve) {
+            setTimeout(function() {
+                resolve();
+            }, sec * 1000);
 
 
+        });
+        return aPromise;
+    }
+};
+
+function* initRuleDBFromLocale() {
+
+    var rootRuleAccessorTag = yield dbMgr.getSysConfigValue(rootCalcRuleIDCfgCriteria);
+    if (!rootRuleAccessorTag) { //copy form systmemb db
+        var rootRuleAccessorTag = yield dbMgr.addAccessorWithThrow("RuleDescriptor");
+        var terminologyTag = yield dbMgr.getSysConfigValue(terminologyAccessorTagCriteria);
+        yield dbMgr.addSysConfigWithThrow(rootCalcRuleIDCfgCriteria, rootRuleAccessorTag);
+
+        var rulesPath = path.join(__dirname, "..", "rules");
+        recursive(rulesPath, [".*"], function(err, files) {
+            for (let i = 0; i < files.length; i++) {
+                var file = files[i];
+                co(function*() {
+                    var jsonRules = require(file);
+                    yield ruleMgr.addRuleDescriptorByRuleDefine(rootRuleAccessorTag, terminologyTag, jsonRules);
+
+                });
+            }
+
+        });
 
     }
-}
+    yield doWait(3);
+
+    function* doWait(sec) {
+        var aPromise = new Promise(function(resolve) {
+            setTimeout(function() {
+                resolve();
+            }, sec * 1000);
+
+
+        });
+        return aPromise;
+    }
+};
+
+function* initOrgnizerDBFromLocale() {
+    var newOrgnizerAccessorTag = yield dbMgr.addAccessorWithThrow("Orgnizer");
+    yield dbMgr.addSysConfigWithThrow(dbMgr.orgnizerAccessorTagCfgCriteria,
+        newOrgnizerAccessorTag);
+
+};

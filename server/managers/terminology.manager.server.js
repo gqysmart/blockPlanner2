@@ -26,31 +26,24 @@ function* terminologyTag2QualifiedName(terminologyTag, terminologyAccessorTag, o
     if (!options) { options = {} };
     _.defaults(options, defaultTransfer2TerminologyTagOptions);
     //
-    var qualifiedName = '';
-    yield getPrettyName(terminologyTag);
 
-    function* getPrettyName(terminologyTag) {
-        var terminologyItem = yield Terminology.findOne({ name: terminologyTag, "tracer.ownerTag": terminologyAccessorTag });
-        switch (options.lan) {
-            case "en":
-                qualifiedName = terminologyItem.desc.en + options.delimiter + qualifiedName;
-                break;
-            case "cn":
-                qualifiedName = terminologyItem.desc.cn + options.delimiter + qualifiedName;
-                break;
-        }
-        if (!terminologyItem.parentName) {
-            return;
-        }
-        yield getPrettyName(terminologyItem.parentName);
 
+    var rootterm = yield dbMgr.theOneItemInAccessorWithThrow(terminologyAccessorTag, { name: terminologyTag }, { "pretty": 1 });
+    if (!rootterm) {
+        var err = { no: exceptionMgr.qualifiedNameNotExistException, context: { qName: qName, accessorTag: terminologyAccessorTag } };
+        throw err;
     }
-    return qualifiedName.slice(0, qualifiedName.length - 1);
+    switch (options.lan) {
+        case "en":
+            return rootterm.pretty.en;
+            break;
+        case "cn":
+            return rootterm.pretty.cn;
 
+            break;
+    }
 
-
-
-}
+};
 
 
 //refactory
@@ -67,10 +60,10 @@ function* qualifiedName2TerminologyTagWithThrow(qName, terminologyAccessorTag, o
     var rootterm = null;
     switch (options.lan) {
         case "en":
-            rootterm = yield dbMgr.theOneItemCoreReadOnlyInProtoAccessorWithThrow(terminologyAccessorTag, { "pretty.en": qName });
+            rootterm = yield dbMgr.theOneItemInAccessorWithThrow(terminologyAccessorTag, { "pretty.en": qName }, { name: 1 });
             break;
         case "cn":
-            rootterm = yield dbMgr.theOneItemCoreReadOnlyInProtoAccessorWithThrow(terminologyAccessorTag, { "pretty.cn": qName });
+            rootterm = yield dbMgr.theOneItemInAccessorWithThrow(terminologyAccessorTag, { "pretty.cn": qName }, { name: 1 });
 
             break;
     }
@@ -90,16 +83,28 @@ function* generatorTerminologyNameByqualifiedNameUnunique(qName) {
 }
 module.exports.generatorTerminologyNameByqualifiedNameUnunique = async(generatorTerminologyNameByqualifiedNameUnunique);
 
-function* addTerminologyByRuleDefine(terminologyAccessorTag, ruleDefine) {
-    var _nameCn = ruleDefine.name;
-    var descResult = {};
+function* addTerminologiesByRuleDefine(terminologyAccessorTag, ruleDefines) {
+    if (!_.isArray(ruleDefines)) {
 
-    yield parseDesc(ruleDefine.desc);
+        ruleDefines = [ruleDefines];
+    }
+    var terminologies = [];
+    for (let i = 0; i < ruleDefines.length; i++) {
+        var cnName = ruleDefines[i].name;
+        var desObject = yield parseDesc(ruleDefines[i].desc);
+        var item = {
+            name: yield generatorTerminologyNameByqualifiedNameUnunique(cnName),
+            pretty: { cn: cnName }
+        };
+        _.defaults(item, desObject);
+        terminologies.push(item);
+    }
 
     function* parseDesc(desc) {
         if (!desc) {
             desc = "";
         }
+        var result = {};
 
         var descSegs = desc.split("|");
         for (let i = 0; i < descSegs.length; i++) {
@@ -107,29 +112,23 @@ function* addTerminologyByRuleDefine(terminologyAccessorTag, ruleDefine) {
 
                 var unitDesc = descSegs[i];
                 var unit = unitDesc.split(":")[1];
-                descResult.unit = unit;
+                result.unit = unit;
                 continue;
             }
         }
+        return result;
 
     }
 
     var context = {};
     yield dbMgr.holdLockAndOperWithAssertWithThrow(terminologyAccessorTag, async(function*() {
-        var existTerm = yield dbMgr.theOneItemCoreReadOnlyInProtoAccessorWithThrow(terminologyAccessorTag, { "detail.cn": _nameCn });
-        if (!existTerm) {
-            var item = {
-                name: yield generatorTerminologyNameByqualifiedNameUnunique(_nameCn),
-                pretty: { cn: _nameCn },
-                unit: descResult.unit,
-                explaination: descResult.explaination,
-                markdown: descResult.markdown,
-            }
-            yield dbMgr.addItemInAccessorWithThrow(terminologyAccessorTag, item);
+        if (terminologies.length > 0) {
+            yield dbMgr.addItemsToAccessorWithThrow(terminologyAccessorTag, terminologies);
 
         }
+
     }), context);
 
 
 };
-module.exports.addTerminologyByRuleDefine = async(addTerminologyByRuleDefine);
+module.exports.addTerminologiesByRuleDefine = async(addTerminologiesByRuleDefine);

@@ -8,8 +8,12 @@ const { wrap: async, co: co } = require("co");
 const systemException = 100;
 const unkownException = systemException + 1;
 const modelNotExist = systemException + 2;
+const sysConfigNotExist = systemException + 3;
+const sysConfigExist = systemException + 4;
 module.exports.unkownException = unkownException;
 module.exports.modelNotExist = modelNotExist;
+module.exports.sysConfigNotExist = sysConfigNotExist;
+module.exports.sysConfigExist = sysConfigExist;
 //parameter erro
 const parameterException = systemException + 50;
 const notFunctionException = parameterException + 1;
