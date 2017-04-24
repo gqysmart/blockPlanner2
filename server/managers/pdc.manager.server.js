@@ -14,11 +14,8 @@ const path = require("path");
 const { wrap: async, co: co } = require("co");
 const assert = require("assert");
 const fs = require("fs");
-const mongoose = require("mongoose");
 const ObjectID = require("mongoDB").ObjectID;
-const PDCStatus = mongoose.model("PDCStatus");
-const Accessor = mongoose.model("Accessor");
-const calcRuleManger = require("./calcRule.manager.server");
+
 const _ = require("lodash");
 const dbMgr = require("./db.manager.server");
 const sysConfig = require("../config/sys");

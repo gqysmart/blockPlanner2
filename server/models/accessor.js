@@ -25,8 +25,8 @@ const accessorSchema = new Schema({
         token: { type: String } //保存口令创建时间，必要时根据时间可以强行删除口令
     },
     security: {
-        readLevel: { type: Number, min: 0, max: 999, default: 500 }, //高于此level才能访问
-        writeLevel: { type: Number, min: 0, max: 999, default: 500 }, //高于此level才能访问
+        readLevel: { type: Number, min: 0, max: 999, }, //高于此level才能访问
+        writeLevel: { type: Number, min: 0, max: 999, }, //高于此level才能访问
     },
     tracer: {
         ownerTag: { type: String }

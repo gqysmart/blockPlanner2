@@ -13,7 +13,6 @@ const assert = require("assert");
 const ObjectID = require("mongoDB").ObjectID;
 const InitConfig = mongoose.model("InitConfig");
 const sysConf = require("../config/sys");
-const Project = mongoose.model("Project");
 const exceptionMgr = require("./exception.manager.server");
 const dbMgr = require("./db.manager.server");
 const incubatorMgr = require("./incubator.manager.server");
@@ -24,13 +23,6 @@ function* getUniqueProjectID(projectInfo) {
 
 }
 
-
-function* getProjectReadOnlyWithThrow(criteria, project) { //project 对外editable太危险了，因为有可能会修改assets，这样plan等pdc的环境就没办法保持稳定。但不开放好像也不行，实际使用时在考虑考虑后果。
-    var _project = { _id: 0 };
-    _.defaults(_project, project);
-    var project = yield Project.findOne(criteria, project);
-    return project;
-}
 
 function* allOwnerProjectsReadOnlyWithThrow(orgnizerName, criteria, project) {
     if (!orgnizerName) {
@@ -45,27 +37,25 @@ function* allOwnerProjectsReadOnlyWithThrow(orgnizerName, criteria, project) {
     return projects;
 }
 
-function* _addProjectWithThrow(orgnizerName, projectInfo) {
+function* _addProjectWithThrow(accessorTag, projectInfo) {
+    if (!projectInfo) { projectInfo = {} };
+    var _projectInfo = {};
 
-    if (!orgnizerName) {
-        var err = { no: exceptionMgr.parameterException, context: { parameter: orgnizerName } };
-        throw err;
-    }
+    if (!projectInfo.name) {
+        _projectInfo.name = (new ObjectID()).toString();
+    } else { _projectInfo.name = projectInfo.name; }
+    var projectName = yield getUniqueProjectID(projectInfo);
 
-    var newProject = new Project(projectInfo); //暂时直接用model，因为没有accessor了。
-    newProject.tracer.orgnizerName = orgnizerName;
-    if (!newProject.thisTag) {
-        newProject.thisTag = yield getUniqueProjectID(projectInfo);
+    if (!projectInfo.assets || !projectInfo.assets.incubator || !projectInfo.assets.incubator.accessorTag) {
+        var newIncubatorAccessorTag = yield dbMgr.newAccessorEditableWithThrow("Incubator");
+        _projectInfo.assets = { incubator: { acessorTag: newIncubatorAccessorTag } };
+        var newIncubator = yield incubatorMgr.addIncubatorWithThrow(newIncubatorAccessorTag);
+        _projectInfo.assets.incubator.name = newIncubator.name;
+    } else {
+
+        ///do later;
     }
-    var newIncubatorAccessor = yield dbMgr.newAccessorEditableWithThrow("INCUBATOR");
-    yield newIncubatorAccessor.save();
-    newProject.assets.incubatorAcessorTag = newIncubatorAccessor.thisTag;
-    var rootIncubator = yield incubatorMgr.newIncubatorEditableWithAllocateContainerWithThrow(newIncubatorAccessor.thisTag, newProject.thisTag);
-    newProject.assets.incubator = rootIncubator.name;
-    if (!newProject.version) {
-        newProject.version = sysConf.version;
-    }
-    yield newProject.save();
-    return newProject.thisTag;
+    return yield dbMgr.addOneItemToAccessorWithThrow(accessorTag, _projectInfo);
+
 };
-module.exports.newProjectWithThrow = async(newProjectWithThrow);
+module.exports.addProjectWithThrow = async(_addProjectWithThrow);

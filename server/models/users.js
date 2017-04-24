@@ -19,15 +19,14 @@ const oAuthTypes = [
  */
 
 const UserSchema = new Schema({
-    name: { type: String, default: "" },
-    email: { type: String, default: "" },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
     provider: { type: String, default: "" },
     hashed_password: { type: String, default: "" },
     salt: { type: String, default: "" },
-    authToken: { type: String, default: "" },
-    github: {},
-    google: {}
-
+    authToken: { type: String, required: true },
+    tracer: { ownerTag: String }, //accessorTag
+    profile: { accessorTag: String, name: String }
 });
 
 const validatePresenceOf = value => value && value.length;
@@ -70,7 +69,6 @@ UserSchema.path('email').validate(function(email, fn) {
     } else {
         fn(true);
     }
-
 }, "email already exists.");
 
 UserSchema.path('hashed_password').validate(function(hashed_password) {
@@ -86,7 +84,6 @@ UserSchema.pre("save", function(next) {
     } else {
         next();
     }
-
 });
 
 /**
@@ -131,7 +128,7 @@ UserSchema.statics = {
      */
 
     load: function(options, cb) {
-        options.select = options.select || 'name username';
+        options.select = options.select || 'name username authToken';
         return this.findOne(options.criteria)
             .select(options.select)
             .exec(cb);

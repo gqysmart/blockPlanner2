@@ -17,12 +17,13 @@ const Schema = mongoose.Schema;
  */
 
 const ProjectSchema = new Schema({
-    thisTag: { type: String, required: true },
-    name: { type: String }, //简单描述
+    name: { type: String, required: true },
+    pretty: { type: String }, //简单描述
 
     assets: {
-        incubatorAccessorTag: { type: String, require: true },
-        incubator: { type: String, require: true } //新建项目时默认有一个。
+        incubator: { accessorTag: String, name: String },
+        PDC: { accessorTag: { type: String, require: true } }, //新建项目时默认有一个。
+        record: { accessorTag: String, }
     },
     tracer: {
         ownerTag: { type: String }, //accessorTag

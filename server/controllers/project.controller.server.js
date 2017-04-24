@@ -7,14 +7,18 @@
 const { respond } = require("../utils");
 const path = require("path");
 const fs = require("fs");
-const projectManager = require("../managers/project.manager.server");
-const planManager = require("../managers/plan.manager.server");
+const { wrap: async, co: co } = require("co");
+const projectMgr = require("../managers/project.manager.server");
+const usrMgr = require("../managers/user.manager.server");
 
-module.exports.createProject = function(req, res, next) {
-
-
+module.exports.createProject = async(function*(req, res, next) {
+    var userToken = req.user.authToken;
+    var projectAccessorTag = yield usrMgr.getSelfProjectAccessorTagWithThrow(userToken);
+    var projectInfo = req.body;
+    var info = yield projectMgr.addProjectWithThrow(projectAccessorTag, projectInfo);
+    //notify success to web.
     res.end();
-};
+});
 
 module.exports.loadProject = function(req, res, next) {
 

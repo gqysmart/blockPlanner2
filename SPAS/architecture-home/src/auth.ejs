@@ -33,9 +33,9 @@
             <h1>登录到
                 <%=title%>
             </h1>
-            <a href="/signup" class="auth-link">新用户? 注册!</a>
+            <a href="/home/signup" class="auth-link">新用户? 注册!</a>
 
-            <form class="form-horizontal" action="/users/session" method="post" role="form">
+            <form class="form-horizontal" action="/home/users/session" method="post" role="form">
                 <input type="hidden" name="_csrf" value="<%= csrf_token %>">
                 <div class="form-group">
                     <label for="inputEmail3" class="col-sm-2 control-label">电子邮箱</label>

@@ -13,7 +13,6 @@ const mongoose = require("mongoose");
 const ObjectID = require("mongoDB").ObjectID;
 const sysConfig = require("../config/sys.js");
 //
-const CalcRuleDescriptor = mongoose.model("CalcRuleDescriptor");
 //const CalcRuleAccessor = mongoose.model("CalcRuleAccessor");
 const InitConfig = mongoose.model("InitConfig");
 const Accessor = mongoose.model("Accessor");

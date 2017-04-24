@@ -37,6 +37,20 @@ module.exports.getJS = function(req, res, next) {
     });
 
 };
+module.exports.getImage = function(req, res, next) {
+
+    var appName = req.params.app;
+    var fileName = req.params[0];
+    var absoluteFileName = path.join(__dirname, "../app/assets", appName, "images/", fileName);
+    fs.exists(absoluteFileName, function(exists) {
+        if (exists) {
+            res.sendFile(absoluteFileName);
+        } else {
+            res.status(404);
+            res.end();
+        }
+    });
+};
 module.exports.getCSS = function(req, res, next) {
     var appName = req.params.app;
     var fileName = req.params[0];

@@ -32,9 +32,9 @@
         <div class="auth-block">
             <h1>注册
                 <%title%>用户</h1>
-            <a href="/login" class="auth-link">已有账户? 登录!</a>
+            <a href="/home/login" class="auth-link">已有账户? 登录!</a>
 
-            <form class="form-horizontal" action="/users" method="post" role="form">
+            <form class="form-horizontal" action="/home/users" method="post" role="form">
                 <input type="hidden" name="_csrf" value="<%= csrf_token %>">
                 <div class="form-group">
                     <label for="inputName3" class="col-sm-2 control-label">用户名</label>

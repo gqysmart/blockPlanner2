@@ -19,19 +19,15 @@ const Schema = mongoose.Schema;
 
 const incubatorSchema = new Schema({
     name: { type: String, require: true },
+    fatherName: { type: String }, //维持进化关系
+
     tracer: {
-        fatherName: { type: String }, //维持进化关系
         ownerTag: { type: String }, //谁来维护这个孵化器，一般就是方案。
     },
     strategy: {
         calcRuleAccessorTag: { type: String, require: true },
         terminologyAccessorTag: { type: String, require: true }
     },
-    container: {
-        PDCAccessorTag: { type: String, require: true },
-        recordAccessorTag: { type: String, require: true }
-    }
-
 });
 
 //查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。

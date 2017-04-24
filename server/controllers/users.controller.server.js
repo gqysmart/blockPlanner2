@@ -7,8 +7,8 @@
 const mongoose = require("mongoose");
 const { wrap: async } = require("co");
 const { respond } = require("../utils");
-const User = mongoose.model("User");
 const conf = require("../config/config");
+const userMgr = require("../managers/user.manager.server");
 const appTitle = conf.appTitle;
 
 /**
@@ -35,10 +35,10 @@ module.exports.load = async(function*(req, res, next, _id) {
 
 module.exports.create = async(function*(req, res) {
 
-    const user = new User(req.body);
-    user.provider = "local";
+    var userInfo = req.body;
+    userInfo.provider = "local";
     try {
-        yield user.save();
+        var user = yield userMgr.addUser(userInfo);
         req.logIn(user, err => {
             if (err) req.flash("info", "sorry,we are not able to log you in!");
             return res.redirect("/");
@@ -52,7 +52,7 @@ module.exports.create = async(function*(req, res) {
 });
 
 module.exports.signup = function(req, res) {
-    respond(res, "reg", { title: appTitle });
+    respond(res, "home/views/reg", { title: appTitle });
 
 };
 exports.actionAfterLogin = actionAfterLogin;

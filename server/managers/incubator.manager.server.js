@@ -15,7 +15,7 @@ const ObjectID = require("mongoDB").ObjectID;
 const PDCMgr = require("./pdc.manager.server");
 const dbMgr = require("./db.manager.server");
 const exceptionMgr = require("./exception.manager.server");
-const calcRuleMgr = require("./calcRule.manager.server");
+const calcRuleMgr = require("./rule.manager.server");
 const recordMgr = require("./record.manager.server");
 const constants = require("./constants.manager.server");
 const sysConfig = require("../config/sys");
@@ -597,5 +597,30 @@ function* newIncubatorEditableWithFatherWithThrow(incubatorAccessorTag, fatherNa
     }
 
 };
+
+function* addIncubatorWithThrow(accessorTag, incubatorInfo) {
+    if (!incubatorInfo) {
+        incubatorInfo = {};
+    };
+    if (!incubatorInfo.protoRuleAccessorTag) {
+        var sysRuleAccessorTag = yield dbMgr.getSysConfigValue(dbMgr.rootCalcRuleAccessorTagCfgCriteria);
+        incubatorInfo.ruleAccessorTag = yield dbMgr.addAccessorWithThrow("RuleDescriptor", sysRuleAccessorTag);
+    } else {
+        incubatorInfo.ruleAccessorTag = yield dbMgr.addAccessorWithThrow("RuleDescriptor", incubatorInfo.protoRuleAccessorTag);
+    }
+    if (!incubatorInfo.protoTermAccessorTag) {
+        var sysTermAccessorTag = yield dbMgr.getSysConfigValue(dbMgr.terminologyAccessorTagCfgCriteria);
+        incubatorInfo.termAccessorTag = yield dbMgr.addAccessorWithThrow("Terminology", sysTermAccessorTag);
+    } else {
+        incubatorInfo.termAccessorTag = yield dbMgr.addAccessorWithThrow("Terminology", incubatorInfo.protoTermAccessorTag);
+    }
+    var _incubatorInfo = {
+        name: (new ObjectID()).toString(),
+        strategy: { calcRuleAccessorTag: incubatorInfo.ruleAccessorTag, terminologyAccessorTag: incubatorInfo.termAccessorTag },
+        fatherName: incubatorInfo.fatherName
+    }
+    return yield dbMgr.addOneItemToAccessorWithThrow(accessorTag, _incubatorInfo);
+}
+module.exports.addIncubatorWithThrow = async(addIncubatorWithThrow);
 module.exports.newIncubatorEditableWithAllocateContainerWithThrow = async(newIncubatorEditableWithAllocateContainerWithThrow);
 module.exports.newIncubatorEditableWithFatherWithThrow = async(newIncubatorEditableWithFatherWithThrow);

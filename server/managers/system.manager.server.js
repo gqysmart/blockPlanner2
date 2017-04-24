@@ -47,12 +47,12 @@ module.exports.init = async(function*(cb) {
     if (!initedCfg) {
         try {
             yield co(initProtoChain());
+            yield co(initSysDefaultAccessor());
             //   yield co(initSystemLog()); //1
             yield co(initTerminologyDBFromLocale());
             // yield co(initTerminologyDBFromRemote());
             //      yield co(initCalcRuleDB());
-            yield co(initRuleDBFromLocale());
-            yield co(initOrgnizerDBFromLocale());
+            //    yield co(initRuleDBFromLocale());
             yield dbMgr.addSysConfigWithThrow(initedCfgCriteria, true);
 
         } catch (e) {
@@ -159,7 +159,6 @@ function* initTerminologyDBFromLocale() {
 
                 });
             }
-
         });
 
     }
@@ -212,9 +211,21 @@ function* initRuleDBFromLocale() {
     }
 };
 
-function* initOrgnizerDBFromLocale() {
-    var newOrgnizerAccessorTag = yield dbMgr.addAccessorWithThrow("Orgnizer");
-    yield dbMgr.addSysConfigWithThrow(dbMgr.orgnizerAccessorTagCfgCriteria,
-        newOrgnizerAccessorTag);
 
-};
+function* initSysDefaultAccessor() {
+    yield initOrgnizerAccessor();
+    yield initUserAccessor();
+
+
+    function* initOrgnizerAccessor() {
+        var newOrgnizerAccessorTag = yield dbMgr.addAccessorWithThrow("Orgnizer");
+        yield dbMgr.addSysConfigWithThrow(dbMgr.orgnizerAccessorTagCfgCriteria,
+            newOrgnizerAccessorTag);
+    };
+
+    function* initUserAccessor() {
+        var newUserAccessorTag = yield dbMgr.addAccessorWithThrow("User");
+        yield dbMgr.addSysConfigWithThrow(dbMgr.mainUserAccessorTagCfgCriteria,
+            newUserAccessorTag);
+    };
+}

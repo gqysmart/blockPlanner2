@@ -39,7 +39,13 @@ const rootCalcRuleAccessorTagCfgCriteria = { name: "rootCalcRuleAccessorTag", ca
 const rootAccessorTagCfgCriteria = { name: "rootAccessorTag", category: "system", version: version };
 const terminologyAccessorTagCfgCriteria = { name: "terminologyAccessorTag", category: "system", version: version };
 const orgnizerAccessorTagCfgCriteria = { name: "orgnizerAccessorTag", category: "system", version: version };
+const mainUserAccessorTagCfgCriteria = { name: "userAccessorTag", category: "system", version: version };
 const systemLogAccessorTagCfgCriteria = { name: "systemLogAccessorTag", category: "system", version: version };
+module.exports.mainUserAccessorTagCfgCriteria = (function() {
+    var criteria = {};
+    _.defaults(criteria, mainUserAccessorTagCfgCriteria);
+    return criteria; //防止污染
+})();
 module.exports.orgnizerAccessorTagCfgCriteria = (function() {
     var criteria = {};
     _.defaults(criteria, orgnizerAccessorTagCfgCriteria);
@@ -258,11 +264,12 @@ function* _theOneItemAlongProtoToAccessorWithThrow(accessorTag, toAccesorTag, cr
 function* _allItemsInAccessorWithThrow(accessorTag, criteria, project, sort, limit) {
     var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
     var itemModel = yield _category2ModelWithThrow(accessor.category);
-    var _criteria = { "tracer.ownerTag": accesscorTag };
+    var _criteria = { "tracer.ownerTag": accessorTag };
     _.defaults(_criteria, criteria);
     var _project = { id: 0 };
     _.defaults(_project, project);
-    yield itemModel.find(_criteria, _project).sort(sort).limit(limit).exec();
+    var items = yield itemModel.find(_criteria, _project).sort(sort).limit(limit).exec();
+    return items;
 
 }
 
@@ -313,7 +320,7 @@ function* _addItemsToAccessorWithThrow(accessorTag, items, project) { //complica
     //返回新的accessorTag
     var now = Date.now();
     yield _updateAccessorWithThrow(accessorTag, {
-        timemark: { lastModifed: now }
+        timemark: { lastModified: now }
     });
     var _project = { _id: 0 };
     _.defaults(_project, project);
@@ -340,6 +347,11 @@ function* _updateItemsInAccessorWithThrow(accessorTag, criteria, updated, projec
     _.defaults(_criteria, criteria);
     var updatedItems = yield itemModel.find(_criteria, { _id: 1 }).exec(); //保存修改过的对象
     yield itemModel.updateMany(_criteria, { $set: updated });
+    if (updatedItems.length > 0) {
+
+        yield _updateAccessorWithThrow(accessorTag, { timemark: { lastModifed: Date.now() } });
+
+    }
     var _project = { id: 0 };
     _.defaults(_project, project);
     return yield itemModel.find({ _id: { $in: updatedItems } }, _project).exec();
@@ -347,7 +359,7 @@ function* _updateItemsInAccessorWithThrow(accessorTag, criteria, updated, projec
 
 function* _theOneItemInAccessorWithThrow(accessorTag, criteria, project) {
     var items = yield _allItemsInAccessorWithThrow(accessorTag, criteria, project);
-    if (items.length > 0) {
+    if (items && items.length > 0) {
         return items[0];
     }
     return null;
@@ -529,6 +541,8 @@ function* _addAccessorWithThrow(modelName, protoAccessorTag) {
         yield _initAccessor(newAccessor);
         newAccessor.category = _category;
         newAccessor.proto.forward = protoAccessorTag; //产生原型链
+        newAccessor.timemark.lastModified = Date.now();
+        newAccessor.timemark.forwardUpdated = Date.now();
         yield newAccessor.save();
         return newAccessor.thisTag;
 
@@ -554,7 +568,8 @@ function* _updateAccessorWithThrow(accessorTag, updatedAccessorInfo) {
         }
     }
     _.defaults(_accessorInfo, updatedAccessorInfo);
-    yield Accessor.update(_criteria, { $set: _accessorInfo });
+    var result = yield Accessor.update(_criteria, { $set: _accessorInfo });
+    return result;
 
 };
 
@@ -564,6 +579,21 @@ function* _initAccessor(accessor) {
 };
 
 function* _getAccessorEditableOnlyProtoAndCategoryWithThrow(accessorTag) {
+    var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, "proto.forward": 1, "category": 1 });
+    if (!accessor) {
+        var err = {
+            no: exceptionMgr.accessorNotExistException,
+            contex: {
+                accessor: accessorTag,
+                level: 7
+            }
+        };
+        throw (err);
+    }
+    return accessor;
+};
+
+function* _getAccessorEditableOnlyLastModifiedWithThrow(accessorTag) {
     var accessor = yield Accessor.findOne({ thisTag: accessorTag, version: sysConfig.version }, { thisTag: 1, "proto.forward": 1, "category": 1 });
     if (!accessor) {
         var err = {

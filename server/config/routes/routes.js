@@ -10,6 +10,7 @@ const users = require("../../controllers/users.controller.server");
 const assets = require("../../controllers/assets.controller.server");
 const cost = require("../../controllers/cost.controller.server");
 const auth = require("../middlewares/authorization");
+const project = require("../../controllers/project.controller.server");
 
 const ObjectID = require("mongodb").ObjectID;
 
@@ -34,8 +35,8 @@ module.exports = function(app, passport) {
     app.get("/home/login", users.login);
     //  app.get("/signup", users.sigup);
     //  app.get('/logout', users.logout);
-    app.post('/users', users.create);
-    app.post('/users/session',
+    app.post('/home/users', users.create);
+    app.post('/home/users/session',
         pauth('local', {
             failureRedirect: '/home/login',
             failureFlash: 'Invalid email or password.'
@@ -43,11 +44,11 @@ module.exports = function(app, passport) {
         users.actionAfterLogin);
 
     app.get("/home/signup", users.signup);
-
+    app.get("/home/createProject", auth.requiresLogin, project.createProject);
     ///resources
     app.param("app", function(req, res, next, appname) {
 
-        var appNames = ["plan", "home"];
+        var appNames = ["plan", "home", "welcome"];
         if (-1 === appNames.indexOf(appname)) {
             res.end("hello"); //404
         } else {
@@ -63,15 +64,15 @@ module.exports = function(app, passport) {
 
     //fonts
     app.get('/:app/fonts/*', assets.getFont);
+    app.get('/:app/images/*', assets.getImage);
+
 
     //profile picture
     app.get('/:app/img/profile/*', assets.getAvanta);
 
 
-    app.get("/project/:projectId/plan/:planId", function(req, res, next) {
 
-    });
-    app.get("/:app", function(req, res, next) {
+    app.get("/:app", auth.requiresLogin, function(req, res, next) {
         //test plan
         var app = req.params.app;
         res.render(app + "/views/index");
