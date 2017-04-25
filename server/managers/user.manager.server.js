@@ -25,7 +25,7 @@ function* addUser(userInfo, userAccessorTag) {
     }
 
     var selfProjects = { accessorTag: yield dbMgr.addAccessorWithThrow("Project") };
-    yield dbMgr.addOneItemToAccessorWithThrow(_userInfo.profile.accessorTag, { name: _userInfo.profile.name, userToken: _userInfo.authToken, selfProjects });
+    yield dbMgr.addOneItemToAccessorWithThrow(_userInfo.profile.accessorTag, { name: _userInfo.profile.name, userToken: _userInfo.authToken, selfProjects: { accessorTag: selfProjects.accessorTag } });
     return yield dbMgr.addOneItemToAccessorWithThrow(userAccessorTag, _userInfo);
 };
 module.exports.addUser = async(addUser);
@@ -41,3 +41,11 @@ function* getSelfProjectAccessorTagWithThrow(authToken) {
     return profile.selfProjects.accessorTag;
 };
 module.exports.getSelfProjectAccessorTagWithThrow = async(getSelfProjectAccessorTagWithThrow);
+
+function* getAllUserSelfProjectInfoWithThrow(authToken) {
+
+    var selfProjectAccessorTag = yield getSelfProjectAccessorTagWithThrow(authToken);
+    var projectInfos = yield dbMgr.allItemsInAccessorWithThrow(selfProjectAccessorTag, {}, { name: 1 });
+    return projectInfos;
+}
+module.exports.getAllUserSelfProjectInfoWithThrow = async(getAllUserSelfProjectInfoWithThrow);

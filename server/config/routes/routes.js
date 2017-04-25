@@ -44,7 +44,9 @@ module.exports = function(app, passport) {
         users.actionAfterLogin);
 
     app.get("/home/signup", users.signup);
-    app.get("/home/createProject", auth.requiresLogin, project.createProject);
+    app.post("/home/createProject", auth.requiresLogin, project.createProject);
+    app.get("/home/projects", auth.requiresLogin, project.loadUserProjectsSummary);
+
     ///resources
     app.param("app", function(req, res, next, appname) {
 

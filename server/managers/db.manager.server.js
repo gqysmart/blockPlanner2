@@ -266,7 +266,7 @@ function* _allItemsInAccessorWithThrow(accessorTag, criteria, project, sort, lim
     var itemModel = yield _category2ModelWithThrow(accessor.category);
     var _criteria = { "tracer.ownerTag": accessorTag };
     _.defaults(_criteria, criteria);
-    var _project = { id: 0 };
+    var _project = { _id: 0 };
     _.defaults(_project, project);
     var items = yield itemModel.find(_criteria, _project).sort(sort).limit(limit).exec();
     return items;
@@ -316,7 +316,7 @@ function* _addItemsToAccessorWithThrow(accessorTag, items, project) { //complica
     var _update = { tracer: { ownerTag: accessorTag } };
 
     var resultItems = yield itemModel.insertMany(items);
-    yield itemModel.updateMany(resultItems, { $set: _update });
+    yield itemModel.updateMany({ _id: { $in: resultItems } }, { $set: _update });
     //返回新的accessorTag
     var now = Date.now();
     yield _updateAccessorWithThrow(accessorTag, {
@@ -495,7 +495,7 @@ function* _doCopyOnWrite(accessorTag) {
         var newItems = yield itemModel.find(_criteria, _project).exec();
         yield itemModel.insertMany(newItems);
         var _updated = { tracer: { ownerTag: toAccessorTag } };
-        yield itemModel.updateMany(newItems, { $set: _updated });
+        yield itemModel.updateMany({ _id: { $in: newItems } }, { $set: _updated });
     };
 
     function* _updateAccessorAssociationWithThrow(oldAssocition, newAssociation) {

@@ -5,7 +5,7 @@
 (function() {
     'use strict';
 
-    angular.module('BlurAdmin.pages.projectInfo')
+    angular.module('BlurAdmin.pages.project')
         .service('projectInfo', projectInfo);
     var projectInfoCache = {};
     var cached = false;

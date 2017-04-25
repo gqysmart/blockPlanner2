@@ -6,7 +6,7 @@
 (function() {
     'use strict';
 
-    angular.module('BlurAdmin.pages.projectInfo')
+    angular.module('BlurAdmin.pages.project')
         .filter('groupSelectpickerOptions', GroupSelectpickerOptions);
 
     /** @ngInject */

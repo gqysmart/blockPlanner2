@@ -17,7 +17,12 @@ module.exports.createProject = async(function*(req, res, next) {
     var projectInfo = req.body;
     var info = yield projectMgr.addProjectWithThrow(projectAccessorTag, projectInfo);
     //notify success to web.
-    res.end();
+    res.json(info);
+});
+
+module.exports.loadUserProjectsSummary = async(function*(req, res, next) {
+    var projects = yield usrMgr.getAllUserSelfProjectInfoWithThrow(req.user.authToken);
+    res.json(projects);
 });
 
 module.exports.loadProject = function(req, res, next) {

@@ -5,22 +5,21 @@
 (function() {
     'use strict';
 
-    angular.module('BlurAdmin.pages.projectInfo')
-        .controller('ProjectStatusCtl', ProjectStatusCtl);
+    angular.module('BlurAdmin.pages.project')
+        .controller('SelectCityCtrl', SelectCityCtrl);
 
     /** @ngInject */
-    function ProjectStatusCtl() {
+    function SelectCityCtrl() {
 
         var vm = this;
         vm.disabled = undefined;
 
-        vm.projectStatusList = [
-            { task: '测算评估', stage: '拿地前' },
-            { task: '施工图设计', stage: '设计' },
-            { task: '招商', stage: '运维' },
-            { task: '营造', stage: '施工' },
-            { task: '规划设计', stage: '设计' },
-
+        vm.cityOfProvince = [
+            { city: '南京市', province: '江苏省' },
+            { city: '镇江市', province: '江苏省' },
+            { city: '上海市', province: '直辖市' },
+            { city: "重庆市", province: "直辖市" },
+            { city: "广州市", province: "广东省" }
         ];
 
         vm.cityShowGroupfn = function() {

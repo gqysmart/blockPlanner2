@@ -22,7 +22,7 @@ const Schema = mongoose.Schema;
 const profileSchema = new Schema({
     name: { type: String, required: true },
     userToken: { type: String, required: true },
-    selfProjets: { accessorTag: String },
+    selfProjects: { accessorTag: String },
     orgnizations: [{ accessorTag: String, orgName: String }],
     tracer: {
         ownerTag: { type: String }

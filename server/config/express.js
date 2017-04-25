@@ -93,7 +93,9 @@ module.exports = function(app, passport) {
     if (env !== "test") {
         app.use(csrf());
         app.use(function(req, res, next) {
-            res.locals.csrf_token = req.csrfToken();
+            var csrfToken = req.csrfToken();
+            res.cookie("XSRF-TOKEN", csrfToken);
+            res.locals.csrf_token = csrfToken;
             next()
         });
     }
