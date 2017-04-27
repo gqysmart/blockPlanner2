@@ -24,7 +24,8 @@ const UserSchema = new Schema({
     provider: { type: String, default: "" },
     hashed_password: { type: String, default: "" },
     salt: { type: String, default: "" },
-    authToken: { type: String, required: true },
+    userToken: { type: String, },
+    userToken: { type: String },
     tracer: { ownerTag: String }, //accessorTag
     profile: { accessorTag: String, name: String }
 });
@@ -128,7 +129,7 @@ UserSchema.statics = {
      */
 
     load: function(options, cb) {
-        options.select = options.select || 'name username authToken';
+        options.select = options.select || 'name username userToken';
         return this.findOne(options.criteria)
             .select(options.select)
             .exec(cb);

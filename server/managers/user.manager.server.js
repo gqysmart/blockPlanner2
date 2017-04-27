@@ -16,8 +16,8 @@ function* addUser(userInfo, userAccessorTag) {
     };
     var _userInfo = {};
     _.defaults(_userInfo, userInfo);
-    if (!_userInfo.authToken) {
-        _userInfo.authToken = (new ObjectID()).toString();
+    if (!_userInfo.userToken) {
+        _userInfo.userToken = (new ObjectID()).toString();
     }
     if (!_userInfo.profile || !_userInfo.profile.accessorTag) {
         _userInfo.profile = { accessorTag: yield dbMgr.addAccessorWithThrow("Profile") };
@@ -25,16 +25,16 @@ function* addUser(userInfo, userAccessorTag) {
     }
 
     var selfProjects = { accessorTag: yield dbMgr.addAccessorWithThrow("Project") };
-    yield dbMgr.addOneItemToAccessorWithThrow(_userInfo.profile.accessorTag, { name: _userInfo.profile.name, userToken: _userInfo.authToken, selfProjects: { accessorTag: selfProjects.accessorTag } });
+    yield dbMgr.addOneItemToAccessorWithThrow(_userInfo.profile.accessorTag, { name: _userInfo.profile.name, userToken: _userInfo.userToken, selfProjects: { accessorTag: selfProjects.accessorTag } });
     return yield dbMgr.addOneItemToAccessorWithThrow(userAccessorTag, _userInfo);
 };
 module.exports.addUser = async(addUser);
 
-function* getSelfProjectAccessorTagWithThrow(authToken) {
+function* getSelfProjectAccessorTagWithThrow(userToken) {
     var accessorTag = yield dbMgr.getSysConfigValue(dbMgr.mainUserAccessorTagCfgCriteria);
-    var user = yield dbMgr.theOneItemInAccessorWithThrow(accessorTag, { authToken });
+    var user = yield dbMgr.theOneItemInAccessorWithThrow(accessorTag, { userToken });
     if (!user) {
-        var err = { no: exceptionMgr.parameterException, context: { authToken } };
+        var err = { no: exceptionMgr.parameterException, context: { userToken } };
         throw err;
     }
     var profile = yield dbMgr.theOneItemInAccessorWithThrow(user.profile.accessorTag, { name: user.profile.name });
@@ -42,9 +42,9 @@ function* getSelfProjectAccessorTagWithThrow(authToken) {
 };
 module.exports.getSelfProjectAccessorTagWithThrow = async(getSelfProjectAccessorTagWithThrow);
 
-function* getAllUserSelfProjectInfoWithThrow(authToken) {
+function* getAllUserSelfProjectInfoWithThrow(userToken) {
 
-    var selfProjectAccessorTag = yield getSelfProjectAccessorTagWithThrow(authToken);
+    var selfProjectAccessorTag = yield getSelfProjectAccessorTagWithThrow(userToken);
     var projectInfos = yield dbMgr.allItemsInAccessorWithThrow(selfProjectAccessorTag, {}, { name: 1 });
     return projectInfos;
 }

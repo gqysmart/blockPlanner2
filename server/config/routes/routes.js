@@ -45,6 +45,7 @@ module.exports = function(app, passport) {
 
     app.get("/home/signup", users.signup);
     app.post("/home/createProject", auth.requiresLogin, project.createProject);
+    app.get("/home/openProject/:projectName", auth.requiresLogin, project.openProject);
     app.get("/home/projects", auth.requiresLogin, project.loadUserProjectsSummary);
 
     ///resources
@@ -60,8 +61,6 @@ module.exports = function(app, passport) {
 
     });
     app.get("/:app/styles/*.css", assets.getCSS);
-
-
     app.get("/:app/scripts/*.js", assets.getJS);
 
     //fonts
@@ -79,14 +78,12 @@ module.exports = function(app, passport) {
         var app = req.params.app;
         res.render(app + "/views/index");
 
-
-
-
-
     });
 
 
-    app.get("/plan/cost/info", cost.loadCostInfo);
+    app.get("/plan/:projectName", function(req, res, next) {
+        res.redirect("/plan");
+    });
 
 
 

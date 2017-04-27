@@ -12,10 +12,11 @@
     var allUserProjectsSummaryCached = false;
     const urlProjectsSummary = "/home/projects";
     const urlCreateProject = "/home/createProject";
+    const urlOpenProject = "/home/openProject";
     var cached = false;
 
     /** @ngInject */
-    function projectInfo($q, $http, $timeout) {
+    function projectInfo($q, $http, $timeout, $window) {
         this.load = function(cb) {
             if (cached) {
                 if (cb) {
@@ -47,6 +48,7 @@
         };
         this.allUserProjectsSummary = getAllUserProjectsSummary;
         this.createProject = createProject;
+        this.openProject = openProject;
 
         function getAllUserProjectsSummary() {
             var loadProjectsSummary = $q.defer();
@@ -75,8 +77,6 @@
 
         function createProject(projectInfo) {
             var createProject = $q.defer();
-
-
             $http({ method: "post", data: projectInfo, url: urlCreateProject }).then(
                 function(response) {
                     allUserProjectsSummary.push(response.data);
@@ -88,6 +88,11 @@
 
             return createProject.promise;
 
+        };
+
+        function openProject(projectSummary) {
+            $window.location.href = (urlOpenProject + "/" + projectSummary.name);
+            var abs = $location.absUrl();
         };
     };
     /** @ngInject */

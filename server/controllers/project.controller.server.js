@@ -12,7 +12,7 @@ const projectMgr = require("../managers/project.manager.server");
 const usrMgr = require("../managers/user.manager.server");
 
 module.exports.createProject = async(function*(req, res, next) {
-    var userToken = req.user.authToken;
+    var userToken = req.user.userToken;
     var projectAccessorTag = yield usrMgr.getSelfProjectAccessorTagWithThrow(userToken);
     var projectInfo = req.body;
     var info = yield projectMgr.addProjectWithThrow(projectAccessorTag, projectInfo);
@@ -21,10 +21,15 @@ module.exports.createProject = async(function*(req, res, next) {
 });
 
 module.exports.loadUserProjectsSummary = async(function*(req, res, next) {
-    var projects = yield usrMgr.getAllUserSelfProjectInfoWithThrow(req.user.authToken);
+    var projects = yield usrMgr.getAllUserSelfProjectInfoWithThrow(req.user.userToken);
     res.json(projects);
 });
 
+module.exports.openProject = function(req, res, next) {
+    var projectName = req.params.projectName;
+    res.redirect("/plan" + "/" + projectName);
+
+}
 module.exports.loadProject = function(req, res, next) {
 
     var userID = req.user._id;

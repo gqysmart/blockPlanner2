@@ -13,6 +13,10 @@
                 function() { $state.go("projects.infos") }
             );
         };
+        this.openProject = function(projectSummary) {
+            projectInfo.openProject(projectSummary);
+
+        };
         projectInfo.allUserProjectsSummary()
             .then(function(summaries) {
                 self.projectsSummary = summaries;
