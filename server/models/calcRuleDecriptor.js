@@ -26,13 +26,19 @@ const ruleDescriptorSchema = new Schema({ //统一为ruleformulariptor。包括�
         formula: String, //改成formula
         style: {
             type: String,
-            enum: ["C0"], //对于断言规则，参数输入同样是依赖bases，输出是bool型//webservice，时间规则等返回的可能是对象类型，通过接口约定//  associated: String, //对于predicated规则，关联到约束的对象。一般规则为NULL。
-            iValue: {}, //迭代时，默认的初始值，如果没有指定iValue，计算时默认为0.
+            enum: ["D0", //字符型描述规则,
+                "D1", //地区地址描述性规则,
+                "D2", //时刻时间描述性规则，
+                "D3", //普通数值规则
+                "D4", //组合关系描述规则
+            ], //对于断言规则，参数输入同样是依赖bases，输出是bool型//webservice，时间规则等返回的可能是对象类型，通过接口约定//  associated: String, //对于predicated规则，关联到约束的对象。一般规则为NULL。
         },
-        tracer: {
-            //       updatedTime: { type: Date, default: Date.now }, //创建和修改后的时间。没有意义。
-            ownerTag: { type: String } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
-        }
+        iValue: {}, //迭代时，默认的初始值，如果没有指定iValue，计算时默认为0.
+
+    },
+    tracer: {
+        //       updatedTime: { type: Date, default: Date.now }, //创建和修改后的时间。没有意义。
+        ownerTag: { type: String } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
     }
 });
 
@@ -51,7 +57,19 @@ var RuleDescriptor = mongoose.model('RuleDescriptor', ruleDescriptorSchema);
 RuleDescriptor.coreProject = coreProject;
 
 /**
- *rule type 用于定义规则的类型，譬如，
+ *
+ * 2017/04/27
+ * rule 不仅要解决存储的问题，还要解决显示和编辑修改的问题。各种规则想要统一用一种face来存储似乎是不可能的。为了简化管理，将规则类别放到rule本身的定义中。
+ * 1. rule类别，最基本的有描述性类别，譬如：项目名称 ，项目省市区等。对描述性规则依然要进行细分，因为不同的描述性规则，使用的显示和编辑方式不一样。如，项目名称，编辑只是简单的表单form.input,显示只是table-td；而地址的省市区，显示依然是table-td，但编辑确是form.select。
+ * 2. 描述性规则，第二种，描述 组合规则，它的目的是将规则进行组合，譬如项目描述，规则本身不进行计算，只是将项目名称、项目地址、项目状态等规则进行组合。
+ * 3. 时间规则等，也算是描述性规则。
+ * 3. 描述规则最大的特点是不进行计算，
+ * 
+ * 计算规则中，也许会分为判定规则返回是否，迭代规则，迭代规则比较繁琐，因为它需要记录迭代退出的条件（这个有可能有很多）;，
+ * 因此目前将rule分为几个大类，描述性规则D，计算性规则C，每个大类规则根据实际的规则，根据存储、计算、显示、编辑等原则的差异，分为各个小类
+ * 
+ * //
+ * rule type 用于定义规则的类型，譬如，
  * 1. 普通规则C0：是指不需要计算的规则，即没有formula，没有bases的规则。
  * 1.1 普通规则C1：返回数值
  * 1.2 普通规则C2：返回字符串

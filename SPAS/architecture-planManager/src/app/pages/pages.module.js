@@ -8,6 +8,7 @@
     angular.module('BlurAdmin.pages', [
             'ui.router',
             'ui.select',
+            "xeditable",
             'ui.tree',
             'ngTable',
             'ngSanitize',

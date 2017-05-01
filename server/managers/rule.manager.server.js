@@ -231,19 +231,24 @@ function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDef
     var ruleDescriptors = [];
     for (let i = 0; i < ruleDefines.length; i++) {
         var ruleDefine = ruleDefines[i];
-        var name = yield termMgr.qualifiedName2TerminologyTagWithThrow(ruleDefine.name, terminologyTag);
+        var name = yield parseName(ruleDefine.name);
         var bases = yield parseBases(ruleDefine.bases);
+        var style = yield parseStyle(ruleDefine.ruleType);
 
         var item = {
             name: name,
-            rule: { bases: bases, formula: ruleDefine.formula, iValue: ruleDefine.iValue },
+            rule: {
+                bases: bases,
+                formula: ruleDefine.formula,
+                iValue: ruleDefine.iValue
+            },
         };
         ruleDescriptors.push(item);
     }
 
     function* parseBases(bases) {
         if (!bases) {
-            return;
+            return null;
         }
         var result = [];
 
@@ -256,6 +261,13 @@ function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDef
 
     }
 
+    function* parseStyle(aString) {
+        return styleNameMap[aString];
+    };
+
+    function* parseName(aString) {
+        yield termMgr.qualifiedName2TerminologyTagWithThrow(aString, terminologyTag);
+    }
     var context = {};
     yield dbMgr.holdLockAndOperWithAssertWithThrow(ruleAccessorTag, async(function*() {
 
@@ -269,4 +281,12 @@ function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDef
 
 };
 
+const styleNameMap = {
+    "组": "D4"
+};
+// "D0", //字符型描述规则,
+// "D1", //地区地址描述性规则,
+// "D2", //时刻时间描述性规则，
+// "D3", //普通数值规则
+// "D4", //组合关系描述规则
 module.exports.addRuleDescriptorByRuleDefine = async(addRuleDescriptorByRuleDefine);
