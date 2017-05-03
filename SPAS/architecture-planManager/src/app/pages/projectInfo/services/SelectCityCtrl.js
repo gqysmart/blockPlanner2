@@ -9,17 +9,17 @@
         .controller('SelectCityCtrl', SelectCityCtrl);
 
     /** @ngInject */
-    function SelectCityCtrl() {
+    function SelectCityCtrl($scope) {
 
         var vm = this;
         vm.disabled = undefined;
 
         vm.cityOfProvince = [
-            { city: '南京市', province: '江苏省' },
-            { city: '镇江市', province: '江苏省' },
-            { city: '上海市', province: '直辖市' },
-            { city: "重庆市", province: "直辖市" },
-            { city: "广州市", province: "广东省" }
+            { id: 0, city: '南京市', province: '江苏省' },
+            { id: 1, city: '镇江市', province: '江苏省' },
+            { id: 2, city: '上海市', province: '直辖市' },
+            { id: 3, city: "重庆市", province: "直辖市" },
+            { id: 4, city: "广州市", province: "广东省" }
         ];
 
         vm.cityShowGroupfn = function() {
@@ -43,6 +43,17 @@
             return groups;
 
         };
+
+        $scope.user = {
+            status: 2
+        };
+
+        $scope.statuses = [
+            { value: 1, text: 'status1' },
+            { value: 2, text: 'status2' },
+            { value: 3, text: 'status3' },
+            { value: 4, text: 'status4' }
+        ];
 
 
 

@@ -240,7 +240,8 @@ function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDef
             rule: {
                 bases: bases,
                 formula: ruleDefine.formula,
-                iValue: ruleDefine.iValue
+                iValue: ruleDefine.iValue,
+                style: style
             },
         };
         ruleDescriptors.push(item);
@@ -282,7 +283,8 @@ function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDef
 };
 
 const styleNameMap = {
-    "组": "D4"
+    "组": "D4",
+    "普通字符串": "D0"
 };
 // "D0", //字符型描述规则,
 // "D1", //地区地址描述性规则,

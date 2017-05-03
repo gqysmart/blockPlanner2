@@ -1,0 +1,6 @@
+<div style="margin:2px;" ng-controller="SelectCityCtrl as selectpickerVm">
+
+    <div style="display:inline-block;padding:8px;width:30%;text-align:center;background:#EaEaEa">{{item.name}}</div>
+
+    <div editable-select="user.status" e-ng-options="s.value as s.text for s in statuses"> {{item.value}}</div>
+</div>

@@ -17,6 +17,9 @@ const exceptionMgr = require("./exception.manager.server");
 const dbMgr = require("./db.manager.server");
 const incubatorMgr = require("./incubator.manager.server");
 
+
+const projectSummaryQName = "江苏嘉城/项目/项目一览";
+
 function* getUniqueProjectID(projectInfo) {
     var newObject = new ObjectID();
     return newObject.toString();

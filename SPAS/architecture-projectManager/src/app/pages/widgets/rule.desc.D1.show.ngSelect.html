@@ -1,0 +1,15 @@
+<div style="padding:2px;">
+
+    <div style=" display:inline-block;vertical-align:middle;padding:8px;width:30%;text-align:center;background:#EaEaEa ">{{item.name}}</div>
+    <div style="display:inline-block;height:20px;width:60%;padding:0 4px; " ng-show="group.editable ">
+        <ui-select ng-model="item.value" style="width:100%; " theme="bootstrap" class="btn-group bootstrap-select" ng-disabled="false" append-to-body="true" search-enabled="true">
+            <ui-select-match placeholder="{{item.value[item.options.descBy]}}">
+                <span> {{$select.selected[item.options.descBy]}}</span>
+            </ui-select-match>
+            <ui-select-choices repeat="opt in item.options.list | filter: $select.search" group-by="item.options.groupBy">
+                <span ng-bind-html="opt[item.options.descBy]"></span>
+            </ui-select-choices>
+        </ui-select>
+    </div>
+    <div style="display:inline-block;width:60%;padding:4px" ng-show="!group.editable">{{item.value[item.options.descBy]}}</div>
+</div>

@@ -51,7 +51,7 @@ module.exports = function(app, passport) {
     ///resources
     app.param("app", function(req, res, next, appname) {
 
-        var appNames = ["plan", "home", "welcome"];
+        var appNames = ["plan", "home", "project"];
         if (-1 === appNames.indexOf(appname)) {
             res.end("hello"); //404
         } else {
@@ -67,22 +67,28 @@ module.exports = function(app, passport) {
     app.get('/:app/fonts/*', assets.getFont);
     app.get('/:app/images/*', assets.getImage);
 
-
     //profile picture
     app.get('/:app/img/profile/*', assets.getAvanta);
-
-
 
     app.get("/:app", auth.requiresLogin, function(req, res, next) {
         //test plan
         var app = req.params.app;
         res.render(app + "/views/index");
+    });
+    app.get("/project/:projectName", function(req, res, next) {
+        res.redirect("/project");
+    });
+    app.post("/plan/ruleValueChanged", auth.requiresLogin, function(req, res, next) {
+        //项目规则，还是方案规则；
+    });
+
+    //project
+    app.get("/project/:projectTag/", auth.requiresLogin, function(req, res, next) {
 
     });
 
+    app.post("/project/:projectTag/ruleValueChanged", auth.requiresLogin, function(req, res, next) {
 
-    app.get("/plan/:projectName", function(req, res, next) {
-        res.redirect("/plan");
     });
 
 
