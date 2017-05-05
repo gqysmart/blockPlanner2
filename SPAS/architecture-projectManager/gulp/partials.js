@@ -20,5 +20,5 @@ gulp.task("partials", function() {
 
         }))
         .pipe($plugins.angularTemplatecache("templateCacheHtml.js", { module: "BlurAdmin", root: "app" }))
-        .pipe(gulp.dest(path.join(conf.paths.tmp, conf.appName, "/partials/")));
+        .pipe(gulp.dest(path.join(conf.paths.tmp, "/partials/")));
 });

@@ -23,7 +23,7 @@ gulp.task("inject", ["scripts", "styles", "injectAuth", "inject404", "copyVendor
 
     ], { read: false });
 
-    var partialsInjectFile = gulp.src(path.join(conf.paths.tmp, "/partials/templateCacheHtml.js"), { read: false });
+    var partialsInjectFile = gulp.src(path.join(conf.paths.tmp, "partials", "templateCacheHtml.js"), { read: false });
     var partialsInjecOptions = {
         starttag: '<!-- inject:partials -->',
         ignorePath: path.join(conf.paths.tmp),

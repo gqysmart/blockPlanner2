@@ -35,7 +35,7 @@ const defaultHoldOptions = {
 //初始化所有mongoose model
 
 const sysinitedCfgCriteria = { name: "systemInited", category: "system", version: version };
-const rootCalcRuleAccessorTagCfgCriteria = { name: "rootCalcRuleAccessorTag", category: "system", version: version };
+const rootRuleAccessorTagCfgCriteria = { name: "rootRuleAccessorTag", category: "system", version: version };
 const rootAccessorTagCfgCriteria = { name: "rootAccessorTag", category: "system", version: version };
 const terminologyAccessorTagCfgCriteria = { name: "terminologyAccessorTag", category: "system", version: version };
 const orgnizerAccessorTagCfgCriteria = { name: "orgnizerAccessorTag", category: "system", version: version };
@@ -56,9 +56,9 @@ module.exports.rootAccessorTagCfgCriteria = (function() {
     _.defaults(criteria, rootAccessorTagCfgCriteria);
     return criteria; //防止污染
 })();
-module.exports.rootCalcRuleAccessorTagCfgCriteria = (function() {
+module.exports.rootRuleAccessorTagCfgCriteria = (function() {
     var criteria = {};
-    _.defaults(criteria, rootCalcRuleAccessorTagCfgCriteria);
+    _.defaults(criteria, rootRuleAccessorTagCfgCriteria);
     return criteria; //防止污染
 })();
 module.exports.terminologyAccessorTagCfgCriteria = (function() {
@@ -228,17 +228,16 @@ module.exports.itemsCountInAccessorWithThrow = async(_itemsCountInAccessorWithTh
 module.exports.allItemsInAccessorWithThrow = async(_allItemsInAccessorWithThrow);
 module.exports.allItemsFromAccessorToWithThrow = async(_allItemsFromAccessorToWithThrow);
 
-function* _theOneItemAlongProtoToAccessorWithThrow(accessorTag, toAccesorTag, criteria, project) {
+function* _theOneItemAlongProtoToAccessorWithThrow(accessorTag, criteria, project, toAccesorTag) {
 
     var accessor = yield _getAccessorEditableOnlyCategoryWithThrow(accessorTag);
     var itemModel = yield _category2ModelWithThrow(accessor.category);
-    var resultItem = yield _doQueryInProtoChain();
-    var _criteria = { "tracer.ownerTag": accessorTag };
+    var _criteria = { tracer: { ownerTag: accessorTag } };
     _.defaults(_criteria, criteria);
 
     var _project = { _id: 0, "tracer.ownerTag": 0 }; //防止泄露原型信息
 
-    _.defaults(_project, project);
+    //  _.defaults(_project, project);//mongoose不支持同时有0，1，需要转换，暂时不考虑。
     return yield _doQueryInProtoChain(accessorTag);
 
     function* _doQueryInProtoChain(accessorTag) {
@@ -894,7 +893,7 @@ function* _getSysConfigValue(criteria) {
 //     var incubator = yield Incubator.findOne({ name: incubatorName, "tracer.ownerTag": inCubatorAccessorTag }, {
 //         "container.PDCAccessorTag": 1,
 //         "container.recordAccessorTag": 1,
-//         "strategy.calcRuleAccessorTag": 1
+//         "strategy.RuleAccessorTag": 1
 //     });
 //     return incubator;
 // };

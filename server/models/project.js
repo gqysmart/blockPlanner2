@@ -18,7 +18,7 @@ const Schema = mongoose.Schema;
 
 const ProjectSchema = new Schema({
     name: { type: String, required: true },
-    pretty: { type: String, default: "默认项目名称" }, //简单描述
+    //  pretty: { type: String, default: "默认项目名称" }, //简单描述
 
     assets: {
         incubator: { accessorTag: String, name: String },

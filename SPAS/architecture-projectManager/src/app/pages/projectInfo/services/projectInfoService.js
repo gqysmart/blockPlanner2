@@ -8,7 +8,7 @@
     angular.module('BlurAdmin.pages.project')
         .service('projectInfo', projectInfo);
     var projectInfoCache = {};
-    const urlRuleValueChanged = "/plan/ruleValueChanged";
+    var urlRuleValueChanged = "/plan/ruleValueChanged";
     var cached = false;
 
     /** @ngInject */
@@ -21,19 +21,11 @@
 
             } else {
                 $timeout(function() {
-                    projectInfoCache = {
-                        name: "xxxx",
-                        location: { city: '南京市', province: '江苏省' },
-                        number: "G235,G240",
-                        status: { task: '测算评估', stage: '拿地前' },
-
-                    };
-                    cached = true;
                     if (cb) {
                         return cb(projectInfoCache);
                     }
 
-                }, 5600);
+                }, 0);
 
 
             }

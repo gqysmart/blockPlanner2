@@ -46,7 +46,7 @@ module.exports = function(app, passport) {
     app.get("/home/signup", users.signup);
     app.post("/home/createProject", auth.requiresLogin, project.createProject);
     app.get("/home/openProject/:projectName", auth.requiresLogin, project.openProject);
-    app.get("/home/projects", auth.requiresLogin, project.loadUserProjectsSummary);
+    app.get("/home/projects", auth.requiresLogin, project.loadUserProjectsOverview);
 
     ///resources
     app.param("app", function(req, res, next, appname) {
@@ -75,21 +75,19 @@ module.exports = function(app, passport) {
         var app = req.params.app;
         res.render(app + "/views/index");
     });
-    app.get("/project/:projectName", function(req, res, next) {
-        res.redirect("/project");
-    });
+
     app.post("/plan/ruleValueChanged", auth.requiresLogin, function(req, res, next) {
         //项目规则，还是方案规则；
     });
 
     //project
-    app.get("/project/:projectTag/", auth.requiresLogin, function(req, res, next) {
-
+    app.get("/project/:projectTag", function(req, res, next) {
+        res.redirect("/project");
     });
 
-    app.post("/project/:projectTag/ruleValueChanged", auth.requiresLogin, function(req, res, next) {
+    // app.post("/project/:projectTag/ruleValueChanged", auth.requiresLogin, function(req, res, next) {
 
-    });
+    // });
 
 
 

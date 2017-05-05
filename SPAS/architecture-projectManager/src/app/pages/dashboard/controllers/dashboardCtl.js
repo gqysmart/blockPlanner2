@@ -93,7 +93,6 @@
                         { city: "广州市", province: "广东省" }
                     ],
                     htmlDesc: "city"
-
                 }
             }]
         }, {
@@ -108,7 +107,7 @@
 
         vm.save = function(group) {
             var dirties = [];
-            for (let i = 0; i < group.items.length; i++) {
+            for (var i = 0; i < group.items.length; i++) {
 
                 var item = group.items[i];
                 if (!_.isEqual(item.value, item.oldValue)) {

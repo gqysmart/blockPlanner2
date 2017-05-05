@@ -19,7 +19,8 @@ const calcRuleMgr = require("./rule.manager.server");
 const recordMgr = require("./record.manager.server");
 const constants = require("./constants.manager.server");
 const sysConfig = require("../config/sys");
-const terminologyMgr = require("./terminology.manager.server");
+const termMgr = require("./terminology.manager.server");
+const cryptMgr = require("./crypt.manager.server");
 
 const Accessor = mongoose.model("Accessor");
 const Incubator = mongoose.model("Incubator");
@@ -36,7 +37,7 @@ function* getUniqIncubatorName() {
 }
 module.exports.createIncubator = async(createIncubator);
 
-function* createIncubator(incubatorInfo, calcRuleAccessorTag, incubatorAccessorTag) {
+function* createIncubator(incubatorInfo, ruleAccessorTag, incubatorAccessorTag) {
 
     var newincubator = new Incubator(incubatorInfo);
     if (!incubatorAccessorTag) {
@@ -55,13 +56,13 @@ function* createIncubator(incubatorInfo, calcRuleAccessorTag, incubatorAccessorT
     yield dbMgr.initRecordAccessor(recordAccessor);
     yield recordAccessor.save();
 
-    if (!calcRuleAccessorTag) {
+    if (!ruleAccessorTag) {
         var calcRuleAccessor = yield calcRuleMgr.createCalcRules();
-        calcRuleAccessorTag = calcRuleAccessor.thisTag;
+        ruleAccessorTag = calcRuleAccessor.thisTag;
     }
 
     newincubator.name = yield getUniqIncubatorName()
-    newincubator.strategy.calcRuleAccessorTag = calcRuleAccessorTag;
+    newincubator.strategy.ruleAccessorTag = ruleAccessorTag;
     newincubator.container.PDCAccessorTag = pdcAccessor.thisTag;
     newincubator.container.recordAccessorTag = recordAccessor.thisTag;
 
@@ -77,8 +78,8 @@ module.exports.transferRuleName2Category = async(transferRuleName2Category);
 module.exports.getEnvironmentFromIncubator = async(getEnvironmentFromIncubator);
 
 function* getEnvironmentFromIncubator(incubator) {
-    // return incubator.strategy.calcRuleAccessorTag.toString();
-    return incubator.strategy.calcRuleAccessorTag;
+    // return incubator.strategy.ruleAccessorTag.toString();
+    return incubator.strategy.ruleAccessorTag;
 
 }
 module.exports.getRecordFromIncubatorByRuleTerminologyTag = async(getRecordFromIncubatorByRuleTerminologyTag);
@@ -99,16 +100,16 @@ function* getRecordFromIncubatorByRuleTerminologyTag(incubatorAccessorTag, incub
     });
     if (!existRecord) {
         //不存在重新计算，并record。,不需要二次查询。
-        existRecord = yield getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, ruleTerminologyTag);
+        existRecord = yield _getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, ruleTerminologyTag);
 
         return existRecord.value;
     } else {
         //存在查看记录时间和规则修改的时间，是否记录已经过时。
-        var calcRuleAccessor = yield Accessor.findOne({ thisTag: incubator.strategy.calcRuleAccessorTag, version: sysConfig.version });
+        var calcRuleAccessor = yield Accessor.findOne({ thisTag: incubator.strategy.ruleAccessorTag, version: sysConfig.version });
         if (existRecord.tracer.updatedTime < calcRuleAccessor.timemark.lastModified || existRecord.tracer.updatedTime < calcRuleAccessor.timemark.forwardUpdated) {
             //重新计算并记录
             //不存在重新计算，并record。,不需要二次查询。
-            existRecord = yield getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, ruleTerminologyTag);
+            existRecord = yield _getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, ruleTerminologyTag);
             return existRecord;
 
         } else { //记录存在且最新，将记录返回。
@@ -119,7 +120,7 @@ function* getRecordFromIncubatorByRuleTerminologyTag(incubatorAccessorTag, incub
 
     function* laborAndRecord() {
         var terminologyAccessorTagCfg = yield InitConfig.findOne(dbMgr.terminologyAccessorTagCfgCriteria);
-        var content = yield constructHierarchy(ruleTerminologyTag, incubator.container.PDCAccessorTag, incubator.strategy.calcRuleAccessorTag, terminologyAccessorTagCfg.value);
+        var content = yield constructHierarchy(ruleTerminologyTag, incubator.container.PDCAccessorTag, incubator.strategy.ruleAccessorTag, terminologyAccessorTagCfg.value);
         var data = {
             body: content
         };
@@ -138,19 +139,19 @@ function* getRecordFromIncubatorByRuleTerminologyTag(incubatorAccessorTag, incub
 
 
 
-function* constructHierarchy(rootCalcRuleName, pdcAccessorTag, calcRuleAccessorTag, terminologyAccessorTag) {
-    var calcRuleDescriptor = yield calcRuleMgr.getCalcRuleDescriptor(calcRuleAccessorTag, rootCalcRuleName);
+function* constructHierarchy(rootCalcRuleName, pdcAccessorTag, ruleAccessorTag, terminologyAccessorTag) {
+    var calcRuleDescriptor = yield calcRuleMgr.getCalcRuleDescriptor(ruleAccessorTag, rootCalcRuleName);
     if (!calcRuleDescriptor) {
         var err = { no: -1, desc: `can't get name=${rootCalcRuleName}'s calcRule descriptor.` };
         throw (err);
     }
-    var value = yield PDCMgr.getCalcRuleValueFromPDC(pdcAccessorTag, calcRuleAccessorTag, rootCalcRuleName);
+    var value = yield PDCMgr.getCalcRuleValueFromPDC(pdcAccessorTag, ruleAccessorTag, rootCalcRuleName);
     if (null === value) {
         var err = { no: -1, desc: `can't get name=${rootCalcRuleName} data from PDC.` };
         throw (err);
     }
 
-    var qualifiedName = yield terminologyMgr.terminologyTag2QualifiedName(rootCalcRuleName, terminologyAccessorTag);
+    var qualifiedName = yield termMgr.terminologyTag2QualifiedName(rootCalcRuleName, terminologyAccessorTag);
 
     var node = {
         name: {
@@ -163,7 +164,7 @@ function* constructHierarchy(rootCalcRuleName, pdcAccessorTag, calcRuleAccessorT
     };
     var bases = calcRuleDescriptor.rule.bases;
     for (let i = 0; i < bases.length; i++) {
-        let childObject = yield constructHierarchy(bases[i], pdcAccessorTag, calcRuleAccessorTag, terminologyAccessorTag);
+        let childObject = yield constructHierarchy(bases[i], pdcAccessorTag, ruleAccessorTag, terminologyAccessorTag);
         node.bases.push(childObject);
     }
     return node;
@@ -184,9 +185,9 @@ const defaultCalcAndPublishcontext = {
 
 }
 
-module.exports.getCalcRuleValueFromPDCWithThrow = async(getCalcRuleValueFromPDCWithThrow);
+module.exports.getCalcRuleValueFromPDCWithThrow = async(_getCalcRuleValueFromPDCWithThrow);
 
-function* getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, targetRuleName, options) {
+function* _getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, targetRuleName, options) {
 
     var context = {}; //构建context
     //真正需要计算的规则
@@ -211,7 +212,7 @@ function* getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, 
         throw err;
     }
     var pdcAccessorTag = incubator.container.PDCAccessorTag;
-    var ruleAccessorTag = incubator.strategy.calcRuleAccessorTag;
+    var ruleAccessorTag = incubator.strategy.ruleAccessorTag;
     var pdcAccessorInEditableOnlySpecial = yield dbMgr.getAccessorEditableOnlySpecialWithThrow(pdcAccessorTag);
     var busyPDCNums = yield dbMgr.itemsCountInAccessorWithThrow(pdcAccessorTag, { "status": "BUSY" });
     if (busyPDCNums >= pdcAccessorInEditableOnlySpecial.special.maxPDC) {
@@ -467,7 +468,7 @@ function* getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, 
 
     }; //end function _doGetRulePDCWithThrow
 
-}; //end getCalcRuleValueFromPDCWithThrow
+}; //end _getCalcRuleValueFromPDCWithThrow
 /**
  * 算法说明：采用正向 按依赖深度的依次迭代；（因为PDC目前设计，并不是针对数值计算的，并没有用到数值计算库，只能是简单运算，后续可能会独立形成pdc服务器中心。对于不可能改变的规则进行收集，如日期等等。。）
  * 1. pdc是内存运算，不进行永久保存（note：但每次都需要解析很多没意义的直接数，似乎有些浪费），不设置pdcItems永久保存，是因为不能保证计算时pdc中的数据是按照规定计算出来的数值，譬如达到了重新约定的迭代次数。即使是直接数，也可能是依赖条件中的一部份。
@@ -544,9 +545,6 @@ function* formatPDCData(rootCalcRuleName, PDC) {
         return node;
     };
 
-
-
-
 };
 
 function* newIncubatorEditableWithAllocateContainerWithThrow(incubatorAccessorTag, ownerTag) {
@@ -565,17 +563,17 @@ function* newIncubatorEditableWithAllocateContainerWithThrow(incubatorAccessorTa
     var newTerminologyAccessor = yield dbMgr.newAccessorEditableWithThrow("TERMINOLOGY");
     yield newTerminologyAccessor.save();
 
-    newIncubator.strategy.calcRuleAccessorTag = newRuleAccessor.thisTag;
+    newIncubator.strategy.ruleAccessorTag = newRuleAccessor.thisTag;
     newIncubator.strategy.terminologyAccessorTag = newTerminologyAccessor.thisTag;
     yield newIncubator.save();
     return newIncubator;
 }
 
-function* newIncubatorEditableWithFatherWithThrow(incubatorAccessorTag, fatherName, ownerTag) {
+function* newIncubatorEditableWithFatherWithThrow(incubatorAccessorTag, parent, ownerTag) {
     //为了保护演变关系，资源分配后就不允许改动了。
     //如果没有父incubator，就为孵化器创建container资源。
-    if (!fatherName) {
-        var err = { no: exceptionMgr.parameterException, context: { father: fatherName } };
+    if (!parent) {
+        var err = { no: exceptionMgr.parameterException, context: { father: parent } };
         throw err;
 
     } else {
@@ -583,14 +581,14 @@ function* newIncubatorEditableWithFatherWithThrow(incubatorAccessorTag, fatherNa
         newIncubator.tracer.ownerTag = ownerTag;
 
         var fatherIncubator = yield dbMgr.theOneItemCoreReadOnlyInProtoAccessorWithThrow(incubatorAccessorTag);
-        newIncubator.tracer.fatherName = fatherName;
+        newIncubator.tracer.parent = parent;
         newIncubator.container = fatherIncubator.container; //复制容器环境
-        var newRuleAccessor = yield dbMgr.newAccessorEditableWithThrow("RULE", fatherIncubator.strategy.calcRuleAccessorTag);
+        var newRuleAccessor = yield dbMgr.newAccessorEditableWithThrow("RULE", fatherIncubator.strategy.ruleAccessorTag);
         yield newRuleAccessor.save();
         var newTerminologyAccessor = yield dbMgr.newAccessorEditableWithThrow("TERMINOLOGY", fatherIncubator.strategy.terminologyAccessorTag);
         yield newTerminologyAccessor.save();
 
-        newIncubator.strategy.calcRuleAccessorTag = newRuleAccessor.thisTag;
+        newIncubator.strategy.ruleAccessorTag = newRuleAccessor.thisTag;
         newIncubator.strategy.terminologyAccessorTag = newTerminologyAccessor.thisTag;
         yield newIncubator.save();
         return newIncubator;
@@ -598,12 +596,12 @@ function* newIncubatorEditableWithFatherWithThrow(incubatorAccessorTag, fatherNa
 
 };
 
-function* addIncubatorWithThrow(accessorTag, incubatorInfo) {
+function* _addIncubatorWithThrow(accessorTag, incubatorInfo) {
     if (!incubatorInfo) {
         incubatorInfo = {};
     };
     if (!incubatorInfo.protoRuleAccessorTag) {
-        var sysRuleAccessorTag = yield dbMgr.getSysConfigValue(dbMgr.rootCalcRuleAccessorTagCfgCriteria);
+        var sysRuleAccessorTag = yield dbMgr.getSysConfigValue(dbMgr.rootRuleAccessorTagCfgCriteria);
         incubatorInfo.ruleAccessorTag = yield dbMgr.addAccessorWithThrow("RuleDescriptor", sysRuleAccessorTag);
     } else {
         incubatorInfo.ruleAccessorTag = yield dbMgr.addAccessorWithThrow("RuleDescriptor", incubatorInfo.protoRuleAccessorTag);
@@ -614,13 +612,105 @@ function* addIncubatorWithThrow(accessorTag, incubatorInfo) {
     } else {
         incubatorInfo.termAccessorTag = yield dbMgr.addAccessorWithThrow("Terminology", incubatorInfo.protoTermAccessorTag);
     }
+    //
+    if (!incubatorInfo.parent) {
+        //新建container
+        var pdcAccessorTag = yield dbMgr.addAccessorWithThrow("PDCStatus");
+        var recordAccessorTag = yield dbMgr.addAccessorWithThrow("Record");
+        _.extend(incubatorInfo, { container: { record: { accessorTag: recordAccessorTag }, PDC: { accessorTag: pdcAccessorTag } } });
+    } else {
+        var pIncubator = yield dbMgr.theOneItemInAccessorWithThrow(parent.accessorTag, { name: parent.name });
+        _extend(incubatorInfo, { container: pIncubator.container });
+
+    }
+
     var _incubatorInfo = {
         name: (new ObjectID()).toString(),
-        strategy: { calcRuleAccessorTag: incubatorInfo.ruleAccessorTag, terminologyAccessorTag: incubatorInfo.termAccessorTag },
-        fatherName: incubatorInfo.fatherName
+        strategy: { ruleAccessorTag: incubatorInfo.ruleAccessorTag, terminologyAccessorTag: incubatorInfo.termAccessorTag },
+        parent: incubatorInfo.parent,
+        container: incubatorInfo.container
     }
     return yield dbMgr.addOneItemToAccessorWithThrow(accessorTag, _incubatorInfo);
 }
-module.exports.addIncubatorWithThrow = async(addIncubatorWithThrow);
+module.exports.addIncubatorWithThrow = async(_addIncubatorWithThrow);
 module.exports.newIncubatorEditableWithAllocateContainerWithThrow = async(newIncubatorEditableWithAllocateContainerWithThrow);
 module.exports.newIncubatorEditableWithFatherWithThrow = async(newIncubatorEditableWithFatherWithThrow);
+
+function* _getRuleObjectByTerminologyTagWithThrow(accessorTag, incubatorName, ruleName) {
+    var incubator = yield dbMgr.theOneItemInAccessorWithThrow(accessorTag, { name: incubatorName });
+    var termAccessorTag = incubator.strategy.terminologyAccessorTag;
+    var qName = yield termMgr.terminologyTag2QualifiedName(qName, termAccessorTag);
+    return yield _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName);
+};
+
+function* _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName) {
+    var incubator = yield dbMgr.theOneItemInAccessorWithThrow(accessorTag, { name: incubatorName });
+    var ruleAccessorTag = incubator.strategy.ruleAccessorTag;
+    var termAccessorTag = incubator.strategy.terminologyAccessorTag;
+    var pdcAccessorTag = incubator.container.PDC.accessorTag;
+    var recordAccessorTag = incubator.container.record.accessorTag;
+    var ruleName = yield termMgr.qualifiedName2TerminologyTagWithThrow(qName, termAccessorTag);
+
+    return yield _doGetRuleObjectByTerminologyTagWithThrow(ruleName)
+
+    function* _doGetRuleObjectByTerminologyTagWithThrow(ruleName) {
+        var ruleDescriptor = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(ruleAccessorTag, { name: ruleName });
+        var result = {};
+        result.name = yield cryptMgr.cryptWith(ruleName);
+        var QName = yield termMgr.terminologyTag2QualifiedName(ruleName, termAccessorTag);
+        result.pretty = QName.split("/").pop();
+        result.style = ruleDescriptor.rule.style;
+        switch (ruleDescriptor.rule.style) {
+            case "D0":
+                result.iValue = ruleDescriptor.rule.iValue;
+                return result;
+                break;
+            case "D4": //组，分别计算每个bases，作为其ivalue;一般的计算也不需要保存到record中，耗时的迭代运算才需要用到recorder。
+                result.iValue = [];
+                for (let i = 0; i < ruleDescriptor.rule.bases.length; i++) {
+                    var base = ruleDescriptor.rule.bases[i];
+                    var baseValue = yield _doGetRuleObjectByTerminologyTagWithThrow(base);
+                    result.iValue.push(baseValue);
+                }
+                return result;
+                break;
+                //
+            case "C1": //依赖作为formula的一部分
+                result.iValue = yield _getCalcRuleValueFromPDCWithThrow(ruleName);
+                return result;
+                break;
+
+
+
+        }
+
+    };
+
+    function* _getCalcRuleValueFromPDCWithThrow(ruleName) {
+        //computing in this pdc
+        //firstly should lock strategy.
+        var ruleDescriptor = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(ruleAccessorTag, { name: ruleName });
+        var context = {};
+        var _G = {};
+        try {
+            return yield dbMgr.holdLockAndOperWithAssertWithThrow(ruleAccessorTag, async(function*() {
+                var bases = ruleDescriptor.rule.bases;
+                for (let i = 0; i < bases.length; i++) {
+                    var baseObj = yield _doGetRuleObjectByTerminologyTagWithThrow(bases[i]);
+
+                    _G["_" + i] = baseObj.iValue;
+                }
+                var result = eval(ruleDescriptor.rule.formula);
+                return result;
+            }), context);
+
+        } catch (e) {
+            throw e;
+        }
+
+    };
+
+
+};
+module.exports.getRuleObjectByQNameWithThrow = async(_getRuleObjectByQNameWithThrow);
+module.exports.getRuleObjectByTerminologyTagWithThrow = async(_getRuleObjectByTerminologyTagWithThrow);

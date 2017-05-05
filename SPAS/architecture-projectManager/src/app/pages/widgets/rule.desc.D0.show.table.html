@@ -1,7 +1,6 @@
-<div style="padding:2px;">
-    <span style="display:inline-block;padding:8px;width:30%;text-align:center;background:#EaEaEa">{{item.name}}</span>
-    <div ng-show="group.editable" style="display:inline-block;width:60%;padding:0 4px;">
-        <input type="text" class="form-control" placeholder="{{item.value}}" ng-model="item.value">
+<div style="padding:1px;">
+    <span style="display:inline-block;padding:10px 0;width:30%;text-align:center;background:#EaEaEa">{{item.name}}</span>
+    <div style="display:inline-block;width:60%;padding:0 4px;" ng-class="{gIneditable:!group.editable}">
+        <input style="color:#000000;font-weight:500" type="text" class="form-control" ng-disabled="!group.editable" placeholder="{{item.value}}" ng-model="item.value">
     </div>
-    <div style="display:inline-block;width:60%;padding:4px" ng-show="!group.editable">{{item.value}}</div>
 </div>

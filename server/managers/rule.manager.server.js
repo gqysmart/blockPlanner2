@@ -17,7 +17,7 @@ const sysConfig = require("../config/sys.js");
 const dbMgr = require("./db.manager.server");
 const termMgr = require("./terminology.manager.server");
 const exceptionMgr = require("./exception.manager.server");
-const rootCalcRuleAccessorTagCfgCriteria = dbMgr.rootCalcRuleAccessorTagCfgCriteria
+const rootRuleAccessorTagCfgCriteria = dbMgr.rootRuleAccessorTagCfgCriteria
 
 
 
@@ -166,7 +166,7 @@ function* isProtoRuleUpdated(accessorTag) {
 
 function* collapseTo(accessorTag, toProtoAccessorTag) {
     if (!toProtoAccessorTag) { //到底
-        var rootRuleAccessorTagCfg = yield InitConfig.findOne(rootCalcRuleAccessorTagCfgCriteria);
+        var rootRuleAccessorTagCfg = yield InitConfig.findOne(rootRuleAccessorTagCfgCriteria);
         toProtoAccessorTag = rootRuleAccessorTagCfg.value;
     }
     var isInChain = yield dbMgr.accessor.isProtoOf(toProtoAccessorTag, accessorTag);
@@ -210,7 +210,7 @@ function* collapseTo(accessorTag, toProtoAccessorTag) {
 function* createCalcRules(sourceRuleAccessorTag) {
     //参数调整
     if (!sourceRuleAccessorTag) {
-        var sourceRuleAccessorTagCfg = yield InitConfig.findOne(dbMgr.rootCalcRuleAccessorTagCfgCriteria);
+        var sourceRuleAccessorTagCfg = yield InitConfig.findOne(dbMgr.rootRuleAccessorTagCfgCriteria);
         sourceRuleAccessorTag = sourceRuleAccessorTagCfg.value;
     }
     //copy，dependence等等。
@@ -249,7 +249,7 @@ function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDef
 
     function* parseBases(bases) {
         if (!bases) {
-            return null;
+            return undefined;
         }
         var result = [];
 
@@ -267,7 +267,7 @@ function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDef
     };
 
     function* parseName(aString) {
-        yield termMgr.qualifiedName2TerminologyTagWithThrow(aString, terminologyTag);
+        return yield termMgr.qualifiedName2TerminologyTagWithThrow(aString, terminologyTag);
     }
     var context = {};
     yield dbMgr.holdLockAndOperWithAssertWithThrow(ruleAccessorTag, async(function*() {
@@ -284,7 +284,8 @@ function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDef
 
 const styleNameMap = {
     "组": "D4",
-    "普通字符串": "D0"
+    "普通数值": "D0",
+    "普通公式": "C1"
 };
 // "D0", //字符型描述规则,
 // "D1", //地区地址描述性规则,

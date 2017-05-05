@@ -1,5 +1,16 @@
-{
-    "name": "江苏嘉城/项目/项目名称",
-    "ruleType": "普通字符串",
-    "iValue": "xxxxxx"
-}
+[{
+        "name": "江苏嘉城/项目/项目名称",
+        "ruleType": "普通数值",
+        "iValue": "xxxxxx"
+    },
+    {
+        "name": "江苏嘉城/项目/测试公式",
+        "ruleType": "普通公式",
+        "bases": "1:江苏嘉城/项目/测试基准1",
+        "formula": "if(7+8 >_G._0){_G._0}else{0}"
+    }, {
+        "name": "江苏嘉城/项目/测试基准1",
+        "ruleType": "普通数值",
+        "iValue": 78
+    }
+]

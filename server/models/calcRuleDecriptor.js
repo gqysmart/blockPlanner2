@@ -31,6 +31,11 @@ const ruleDescriptorSchema = new Schema({ //统一为ruleformulariptor。包括�
                 "D2", //时刻时间描述性规则，
                 "D3", //普通数值规则
                 "D4", //组合关系描述规则
+                "D5", //普通Plain object
+                //
+                "C1", //与bases没有层级关系，不存储iValue值，值是通过formula计算得来的。
+                "C2", //与bases有层级关系，不存储iValue值，值是通过formula计算得来的。
+                "C4", //是迭代变量，需提供iValue值作为默认值，没有默认为0
             ], //对于断言规则，参数输入同样是依赖bases，输出是bool型//webservice，时间规则等返回的可能是对象类型，通过接口约定//  associated: String, //对于predicated规则，关联到约束的对象。一般规则为NULL。
         },
         iValue: {}, //迭代时，默认的初始值，如果没有指定iValue，计算时默认为0.

@@ -51,7 +51,7 @@ function* _addProjectWithThrow(accessorTag, projectInfo) {
 
     if (!projectInfo.assets || !projectInfo.assets.incubator || !projectInfo.assets.incubator.accessorTag) {
         var newIncubatorAccessorTag = yield dbMgr.addAccessorWithThrow("Incubator");
-        _projectInfo.assets = { incubator: { acessorTag: newIncubatorAccessorTag } };
+        _projectInfo.assets = { incubator: { accessorTag: newIncubatorAccessorTag } };
         var newIncubator = yield incubatorMgr.addIncubatorWithThrow(newIncubatorAccessorTag);
         _projectInfo.assets.incubator.name = newIncubator.name;
     } else {
@@ -60,6 +60,7 @@ function* _addProjectWithThrow(accessorTag, projectInfo) {
     }
     return yield dbMgr.addOneItemToAccessorWithThrow(accessorTag, _projectInfo);
 };
+
 
 
 module.exports.addProjectWithThrow = async(_addProjectWithThrow);

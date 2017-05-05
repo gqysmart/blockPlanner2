@@ -33,7 +33,7 @@ const costCalRules = "architecture.costCalRules" + version;
 // mongoose model
 //
 const initedCfgCriteria = dbMgr.sysinitedCfgCriteria;
-const rootCalcRuleIDCfgCriteria = dbMgr.rootCalcRuleAccessorTagCfgCriteria;
+const rootCalcRuleIDCfgCriteria = dbMgr.rootRuleAccessorTagCfgCriteria;
 const terminologyAccessorTagCriteria = dbMgr.terminologyAccessorTagCfgCriteria;
 const systemLogAccessorTagCfgCriteria = dbMgr.sysinitedCfgCriteria;
 const rootAccessorTagCfgCriteria = dbMgr.rootAccessorTagCfgCriteria;
@@ -52,7 +52,7 @@ module.exports.init = async(function*(cb) {
             yield co(initTerminologyDBFromLocale());
             // yield co(initTerminologyDBFromRemote());
             //      yield co(initCalcRuleDB());
-            //    yield co(initRuleDBFromLocale());
+            yield co(initRuleDBFromLocale());
             yield dbMgr.addSysConfigWithThrow(initedCfgCriteria, true);
 
         } catch (e) {

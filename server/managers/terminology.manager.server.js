@@ -28,9 +28,9 @@ function* terminologyTag2QualifiedName(terminologyTag, terminologyAccessorTag, o
     //
 
 
-    var rootterm = yield dbMgr.theOneItemInAccessorWithThrow(terminologyAccessorTag, { name: terminologyTag }, { "pretty": 1 });
+    var rootterm = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(terminologyAccessorTag, { name: terminologyTag }, { "pretty": 1 });
     if (!rootterm) {
-        var err = { no: exceptionMgr.qualifiedNameNotExistException, context: { qName: qName, accessorTag: terminologyAccessorTag } };
+        var err = { no: exceptionMgr.qualifiedNameNotExistException, context: { name: terminologyTag, accessorTag: terminologyAccessorTag } };
         throw err;
     }
     switch (options.lan) {
@@ -60,10 +60,10 @@ function* qualifiedName2TerminologyTagWithThrow(qName, terminologyAccessorTag, o
     var rootterm = null;
     switch (options.lan) {
         case "en":
-            rootterm = yield dbMgr.theOneItemInAccessorWithThrow(terminologyAccessorTag, { "pretty.en": qName }, { name: 1 });
+            rootterm = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(terminologyAccessorTag, { "pretty.en": qName }, { name: 1 });
             break;
         case "cn":
-            rootterm = yield dbMgr.theOneItemInAccessorWithThrow(terminologyAccessorTag, { "pretty.cn": qName }, { name: 1 });
+            rootterm = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(terminologyAccessorTag, { "pretty.cn": qName }, { name: 1 });
 
             break;
     }

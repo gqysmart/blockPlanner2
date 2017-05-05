@@ -3,7 +3,6 @@ const path = require("path");
 const _ = require("lodash");
 const { wrap: async } = require("co");
 const fs = require("fs");
-const mongoose = require("mongoose");
 const assert = require("assert");
 const ObjectID = require("mongoDB").ObjectID;
 const sysConf = require("../config/sys");
@@ -45,7 +44,7 @@ module.exports.getSelfProjectAccessorTagWithThrow = async(getSelfProjectAccessor
 function* getAllUserSelfProjectInfoWithThrow(userToken) {
 
     var selfProjectAccessorTag = yield getSelfProjectAccessorTagWithThrow(userToken);
-    var projectInfos = yield dbMgr.allItemsInAccessorWithThrow(selfProjectAccessorTag, {}, { name: 1 });
+    var projectInfos = yield dbMgr.allItemsInAccessorWithThrow(selfProjectAccessorTag, {}, { name: 1, "assets.incubator": 1 });
     return projectInfos;
 }
 module.exports.getAllUserSelfProjectInfoWithThrow = async(getAllUserSelfProjectInfoWithThrow);

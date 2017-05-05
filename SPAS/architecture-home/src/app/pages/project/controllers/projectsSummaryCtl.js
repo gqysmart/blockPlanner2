@@ -17,6 +17,11 @@
             projectInfo.openProject(projectSummary);
 
         };
+        self.getPrettyName = function(qName) {
+            var nameSeqs = qName.split("/");
+            return nameSeqs.pop();
+
+        }
         projectInfo.allUserProjectsSummary()
             .then(function(summaries) {
                 self.projectsSummary = summaries;

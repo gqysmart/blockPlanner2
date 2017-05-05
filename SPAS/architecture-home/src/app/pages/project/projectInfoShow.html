@@ -1,19 +1,22 @@
 <div ng-controller="projectsSummaryCtl as psCtl">
     <div class="row">
-        <div ng-repeat="ps in psCtl.projectsSummary" class="col-lg-3 col-md-6 col-sm-6" ba-panel ba-panel-title="{{ps.name}}" ba-panel-class="medium-panel">
+        <div ng-repeat="ps in psCtl.projectsSummary" class="col-lg-3 col-md-6 col-sm-6" ba-panel ba-panel-class="xsmall-panel">
+            <div ng-if="ps.overview.style ==='D4'" ng-include="'app/pages/widgets/rule.desc.D4.show.table.html'"> </div>
+
+
             <ul class="btn-list clearfix" style="position:absolute;bottom:0px;right:15px;">
                 <li><button type="button" class="btn btn-default btn-with-icon" ng-click="psCtl.openProject(ps)"><i class="ion-android-download"></i>打开</button></li>
             </ul>
         </div>
         <div class="col-lg-3 col-md-6 col-sm-6">
 
-            <div ba-panel ba-panel-title="{{ps.name}}" ba-panel-class="medium-panel ">
-                <a class="btn" ng-click="psCtl.createProject()">
-                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%) translate(-50%);">
+            <div ba-panel ba-panel-title="{{ps.name}}" ba-panel-class="xsmall-panel ">
+                <div class="btn" ng-click="psCtl.createProject()">
+                    <div style="">
                         <span class="ion-android-add"></span>
                         <span class="add-project-button-label">创建新项目</span>
                     </div>
-                </a>
+                </div>
             </div>
 
 

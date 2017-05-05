@@ -10,6 +10,9 @@ const fs = require("fs");
 const { wrap: async, co: co } = require("co");
 const projectMgr = require("../managers/project.manager.server");
 const usrMgr = require("../managers/user.manager.server");
+const termMgr = require("../managers/terminology.manager.server");
+const cryptMgr = require("../managers/crypt.manager.server");
+const incubatorMgr = require("../managers/incubator.manager.server");
 
 module.exports.createProject = async(function*(req, res, next) {
     var userToken = req.user.userToken;
@@ -20,14 +23,24 @@ module.exports.createProject = async(function*(req, res, next) {
     res.json(info);
 });
 
-module.exports.loadUserProjectsSummary = async(function*(req, res, next) {
-    var projects = yield usrMgr.getAllUserSelfProjectInfoWithThrow(req.user.userToken);
-    res.json(projects);
+module.exports.loadUserProjectsOverview = async(function*(req, res, next) {
+    var projectInfos = yield usrMgr.getAllUserSelfProjectInfoWithThrow(req.user.userToken);
+    var result = [];
+    for (let i = 0; i < projectInfos.length; i++) {
+        var projectInfo = {};
+        var incubator = projectInfos[i].assets.incubator;
+        var ruleObj = yield incubatorMgr.getRuleObjectByQNameWithThrow(incubator.accessorTag, incubator.name, "江苏嘉城/项目/项目一览");
+        projectInfo.name = yield cryptMgr.cryptWith(projectInfos[i].name);
+        projectInfo.overview = ruleObj;
+        result.push(projectInfo);
+
+    }
+    res.json(result);
 });
 
 module.exports.openProject = function(req, res, next) {
     var projectName = req.params.projectName;
-    res.redirect("/plan" + "/" + projectName);
+    res.redirect("/project" + "/" + projectName);
 
 }
 module.exports.loadProject = function(req, res, next) {

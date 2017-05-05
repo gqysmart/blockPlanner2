@@ -1,5 +1,5 @@
 /**
- * incubator 孵化器是规则演变的场所，一个孵化器可以孵化出N个不同条件下的规则，通过fatherName 建立演化关系，并通过ruleAccessor和terminologyAccessor保存演化记录，
+ * incubator 孵化器是规则演变的场所，一个孵化器可以孵化出N个不同条件下的规则，通过parent 建立演化关系，并通过ruleAccessor和terminologyAccessor保存演化记录，
  * 并维持这种演变关系。每个孵化器可以通过container获取计算资源PDC，以及record中心。一般孵化器演化时，只需要copy父演化器的container的container。
  * 
  * 
@@ -19,15 +19,19 @@ const Schema = mongoose.Schema;
 
 const incubatorSchema = new Schema({
     name: { type: String, require: true },
-    fatherName: { type: String }, //维持进化关系
+    parent: { accessorTag: String, name: String }, //维持进化关系
 
     tracer: {
         ownerTag: { type: String }, //谁来维护这个孵化器，一般就是方案。
     },
     strategy: {
-        calcRuleAccessorTag: { type: String, require: true },
+        ruleAccessorTag: { type: String, require: true },
         terminologyAccessorTag: { type: String, require: true }
     },
+    container: {
+        PDC: { accessorTag: { type: String, require: true } }, //新建项目时默认有一个。
+        record: { accessorTag: String }
+    }
 });
 
 //查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
@@ -38,7 +42,7 @@ const coreProject = {
     name: 1,
     "container.PDCAccessorTag": 1,
     "container.recordAccessorTag": 1,
-    "strategy.calcRuleAccessorTag": 1,
+    "strategy.ruleAccessorTag": 1,
     "strategy.terminologyAccessorTag": 1
 };
 const coveredIndex = {
@@ -46,7 +50,7 @@ const coveredIndex = {
     name: 1,
     "container.PDCAccessorTag": 1,
     "container.recordAccessorTag": 1,
-    "strategy.calcRuleAccessorTag": 1,
+    "strategy.ruleAccessorTag": 1,
     "strategy.terminologyAccessorTag": 1
 };
 incubatorSchema.index(coveredIndex); //cover 查询
