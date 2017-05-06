@@ -10,6 +10,19 @@
     var projectInfoCache = {};
     var urlRuleValueChanged = "/plan/ruleValueChanged";
     var cached = false;
+    var cityList = {
+        groupBy: "province",
+        descBy: "city",
+        list: [
+            { city: '南京市', province: '江苏省' },
+            { city: '镇江市', province: '江苏省' },
+            { city: '苏州市', province: '江苏省' },
+            { city: '上海市', province: '直辖市' },
+            { city: "重庆市", province: "直辖市" },
+            { city: "广州市", province: "广东省" }
+        ],
+        htmlDesc: "city"
+    };
 
     /** @ngInject */
     function projectInfo($q, $http, $timeout) {
@@ -54,6 +67,13 @@
             return ruleValueSaved.promise;
 
 
+        }
+        this.getCityList = function() {
+            var getCityListDefer = $q.defer();
+            $timeout(function() {
+                getCityListDefer.resolve(cityList);
+            }); //以后可以改为ajax；
+            return getCityListDefer.promise();
         }
 
     }

@@ -32,6 +32,9 @@ module.exports = function(app, passport) {
     app.get('/', auth.requiresLogin, function(req, res, next) {
         res.redirect("/home");
     });
+    app.get("/home", auth.requiresLogin, function(req, res, next) {
+        res.render("home/views/index");
+    })
     app.get("/home/login", users.login);
     //  app.get("/signup", users.sigup);
     //  app.get('/logout', users.logout);
@@ -70,21 +73,22 @@ module.exports = function(app, passport) {
     //profile picture
     app.get('/:app/img/profile/*', assets.getAvanta);
 
-    app.get("/:app", auth.requiresLogin, function(req, res, next) {
-        //test plan
-        var app = req.params.app;
-        res.render(app + "/views/index");
-    });
+    // app.get("/:app", auth.requiresLogin, function(req, res, next) {
+    //     //test plan
+    //     var app = req.params.app;
+    //     res.render(app + "/views/index");
+    // });
 
     app.post("/plan/ruleValueChanged", auth.requiresLogin, function(req, res, next) {
         //项目规则，还是方案规则；
     });
 
     //project
-    app.get("/project/:projectTag", function(req, res, next) {
-        res.redirect("/project");
+    app.get("/project/:projectTag", auth.requiresLogin, function(req, res, next) {
+        var projectTag = req.params["projectTag"];
+        res.render("project/views/index", { projectTag: projectTag })
     });
-
+    app.post("/project/rule", auth.requiresLogin, project.getProjectRule);
     // app.post("/project/:projectTag/ruleValueChanged", auth.requiresLogin, function(req, res, next) {
 
     // });

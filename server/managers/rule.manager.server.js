@@ -283,8 +283,11 @@ function* addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDef
 };
 
 const styleNameMap = {
-    "组": "D4",
+
     "普通数值": "D0",
+    "普通地址": "D1",
+    "普通时间": "D2",
+    "组": "D4",
     "普通公式": "C1"
 };
 // "D0", //字符型描述规则,

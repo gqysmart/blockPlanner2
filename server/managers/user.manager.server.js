@@ -41,10 +41,18 @@ function* getSelfProjectAccessorTagWithThrow(userToken) {
 };
 module.exports.getSelfProjectAccessorTagWithThrow = async(getSelfProjectAccessorTagWithThrow);
 
-function* getAllUserSelfProjectInfoWithThrow(userToken) {
+function* _getAllUserSelfProjectInfoWithThrow(userToken) {
 
     var selfProjectAccessorTag = yield getSelfProjectAccessorTagWithThrow(userToken);
     var projectInfos = yield dbMgr.allItemsInAccessorWithThrow(selfProjectAccessorTag, {}, { name: 1, "assets.incubator": 1 });
     return projectInfos;
 }
-module.exports.getAllUserSelfProjectInfoWithThrow = async(getAllUserSelfProjectInfoWithThrow);
+module.exports.getAllUserSelfProjectInfoWithThrow = async(_getAllUserSelfProjectInfoWithThrow);
+
+function* _getUserSelfProjectInfoWithThrow(userToken, projectTag) {
+
+    var selfProjectAccessorTag = yield getSelfProjectAccessorTagWithThrow(userToken);
+    var projectInfo = yield dbMgr.theOneItemInAccessorWithThrow(selfProjectAccessorTag, { name: projectTag }, { name: 1, "assets.incubator": 1 });
+    return projectInfo;
+}
+module.exports.getUserSelfProjectInfoWithThrow = async(_getUserSelfProjectInfoWithThrow);

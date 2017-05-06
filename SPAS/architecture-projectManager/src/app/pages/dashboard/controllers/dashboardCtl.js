@@ -9,7 +9,7 @@
         .controller('dashboardCtl', dashboardCtl);
 
     /** @ngInject */
-    function dashboardCtl(projectInfo) {
+    function dashboardCtl(projectDetails) {
         var vm = this;
         this.groups = [{
             editable: false,
@@ -123,10 +123,12 @@
                 group.editable = false;
                 console.log("failed to save.");
             });
-        }
+        };
 
-
-
+        //
+        projectDetails.getProjectRule("江苏嘉城/项目/项目概况").then(function(res) {
+            vm.summares = res;
+        });
 
     };
 })();
