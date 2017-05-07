@@ -8,6 +8,7 @@
     angular.module('BlurAdmin.pages.project')
         .service('projectDetails', projectDetails);
     var urlRule = "/project/rule";
+    var urlModifyRule = "/project/modifyRulesValue"
     var cityList = {
         groupBy: "province",
         descBy: "city",
@@ -24,10 +25,16 @@
 
     /** @ngInject */
     function projectDetails($q, $http, $timeout, $document) {
+        this.projectTag = $document.find("#projectTag")[0].value;
         this.getProjectRule = function(ruleQName) {
-            var data = { projectTag: $document.find("#projectTag")[0].value, rule: ruleQName };
+            var data = { projectTag: this.projectTag, rule: ruleQName };
 
             return $http({ method: "POST", url: urlRule, data: data });
+        };
+        this.modifyRulesValue = function(rules) {
+            var data = { projectTag: this.projectTag, rules: rules };
+            return $http({ method: "POST", url: urlModifyRule, data: data });
+
         }
     }
 })();

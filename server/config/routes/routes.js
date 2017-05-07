@@ -89,9 +89,7 @@ module.exports = function(app, passport) {
         res.render("project/views/index", { projectTag: projectTag })
     });
     app.post("/project/rule", auth.requiresLogin, project.getProjectRule);
-    // app.post("/project/:projectTag/ruleValueChanged", auth.requiresLogin, function(req, res, next) {
-
-    // });
+    app.post("/project/modifyRulesValue", auth.requiresLogin, project.modifyProjectRuleValue);
 
 
 

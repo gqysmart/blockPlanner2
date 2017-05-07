@@ -5,8 +5,7 @@
                 <div ba-panel ba-panel-title={{group.name}} ba-panel-class="with-scroll medium-panel">
 
                     <div ng-repeat="item in group.items">
-                        <div ng-if="item.style==='D0'" ng-include="'app/pages/widgets/rule.desc.D0.show.table.html'"></div>
-                        <div ng-if="item.style==='D1'" ng-include="'app/pages/widgets/rule.desc.D1.show.ngSelect.html'"> </div>
+                        <div ng-include="item.html"></div>
                     </div>
 
                     <ul class="btn-list clearfix" style="display:block;position:relative;bottom:0px;">

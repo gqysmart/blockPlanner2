@@ -1,6 +1,10 @@
 /**
+
+/**
+ * * Schema 的设计：
+ * 要改一起改的，才需要放在一个对象里。否则，还是平坦化。不然更新没办法写$set.
  * 
- * 
+ *
  * 
  */
 
@@ -319,7 +323,7 @@ function* _addItemsToAccessorWithThrow(accessorTag, items, project) { //complica
     //返回新的accessorTag
     var now = Date.now();
     yield _updateAccessorWithThrow(accessorTag, {
-        timemark: { lastModified: now }
+        lastModified: now
     });
     var _project = { _id: 0 };
     _.defaults(_project, project);
@@ -348,7 +352,7 @@ function* _updateItemsInAccessorWithThrow(accessorTag, criteria, updated, projec
     yield itemModel.updateMany(_criteria, { $set: updated });
     if (updatedItems.length > 0) {
 
-        yield _updateAccessorWithThrow(accessorTag, { timemark: { lastModifed: Date.now() } });
+        yield _updateAccessorWithThrow(accessorTag, { lastModifed: Date.now() });
 
     }
     var _project = { id: 0 };
@@ -540,8 +544,8 @@ function* _addAccessorWithThrow(modelName, protoAccessorTag) {
         yield _initAccessor(newAccessor);
         newAccessor.category = _category;
         newAccessor.proto.forward = protoAccessorTag; //产生原型链
-        newAccessor.timemark.lastModified = Date.now();
-        newAccessor.timemark.forwardUpdated = Date.now();
+        newAccessor.lastModified = Date.now();
+        newAccessor.forwardUpdated = Date.now();
         yield newAccessor.save();
         return newAccessor.thisTag;
 
@@ -563,7 +567,7 @@ function* _updateAccessorWithThrow(accessorTag, updatedAccessorInfo) {
     if (updatedAccessorInfo.proto && updatedAccessorInfo.proto.forward) {
         var _accessor = yield _getAccessorEditableOnlyProtoWithThrow(accessorTag);
         if (_accessor.proto.forward !== updatedAccessorInfo.proto.forward) {
-            _accessorInfo.timemark.forwardUpdated = Date.now();
+            _accessorInfo.forwardUpdated = Date.now();
         }
     }
     _.defaults(_accessorInfo, updatedAccessorInfo);
@@ -574,7 +578,7 @@ function* _updateAccessorWithThrow(accessorTag, updatedAccessorInfo) {
 
 function* _initAccessor(accessor) {
     accessor.thisTag = yield getUniqTag();
-    accessor.timemark.lastModifed = Date.now();
+    accessor.lastModifed = Date.now();
 };
 
 function* _getAccessorEditableOnlyProtoAndCategoryWithThrow(accessorTag) {

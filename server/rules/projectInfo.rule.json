@@ -21,7 +21,7 @@
     {
         "name": "江苏嘉城/项目/项目地址",
         "ruleType": "普通地址",
-        "iValue": "{省:'江苏省',市:'南京市',详细地址:''}",
+        "iValue": { "province": "江苏省", "city": "南京市", "detailedAddress": "" },
         "notation": ""
     },
     {

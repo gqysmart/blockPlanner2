@@ -106,7 +106,7 @@ function* getRecordFromIncubatorByRuleTerminologyTag(incubatorAccessorTag, incub
     } else {
         //存在查看记录时间和规则修改的时间，是否记录已经过时。
         var calcRuleAccessor = yield Accessor.findOne({ thisTag: incubator.strategy.ruleAccessorTag, version: sysConfig.version });
-        if (existRecord.tracer.updatedTime < calcRuleAccessor.timemark.lastModified || existRecord.tracer.updatedTime < calcRuleAccessor.timemark.forwardUpdated) {
+        if (existRecord.tracer.updatedTime < calcRuleAccessor.lastModified || existRecord.tracer.updatedTime < calcRuleAccessor.forwardUpdated) {
             //重新计算并记录
             //不存在重新计算，并record。,不需要二次查询。
             existRecord = yield _getCalcRuleValueFromPDCWithThrow(incubatorAccessorTag, incubatorName, ruleTerminologyTag);
@@ -650,8 +650,8 @@ function* _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName) {
     var pdcAccessorTag = incubator.container.PDC.accessorTag;
     var recordAccessorTag = incubator.container.record.accessorTag;
     var ruleName = yield termMgr.qualifiedName2TerminologyTagWithThrow(qName, termAccessorTag);
-
-    return yield _doGetRuleObjectByTerminologyTagWithThrow(ruleName)
+    var result = yield _doGetRuleObjectByTerminologyTagWithThrow(ruleName);
+    return result;
 
     function* _doGetRuleObjectByTerminologyTagWithThrow(ruleName) {
         var ruleDescriptor = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(ruleAccessorTag, { name: ruleName });
@@ -662,7 +662,14 @@ function* _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName) {
         result.style = ruleDescriptor.rule.style;
         switch (ruleDescriptor.rule.style) {
             case "D0":
+            case "D1":
+            case "D3":
                 result.iValue = ruleDescriptor.rule.iValue;
+                return result;
+                break;
+            case "D2": //时间
+                var time = new Date(ruleDescriptor.rule.iValue);
+                result.iValue = time;
                 return result;
                 break;
             case "D4": //组，分别计算每个bases，作为其ivalue;一般的计算也不需要保存到record中，耗时的迭代运算才需要用到recorder。
@@ -679,9 +686,9 @@ function* _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName) {
                 result.iValue = yield _getCalcRuleValueFromPDCWithThrow(ruleName);
                 return result;
                 break;
-
-
-
+            default:
+                var err = { no: exceptionMgr.parameterException, context: { style: ruleDescriptor.rule.style } };
+                throw err;
         }
 
     };
@@ -693,16 +700,15 @@ function* _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName) {
         var context = {};
         var _G = {};
         try {
-            return yield dbMgr.holdLockAndOperWithAssertWithThrow(ruleAccessorTag, async(function*() {
-                var bases = ruleDescriptor.rule.bases;
-                for (let i = 0; i < bases.length; i++) {
-                    var baseObj = yield _doGetRuleObjectByTerminologyTagWithThrow(bases[i]);
 
-                    _G["_" + i] = baseObj.iValue;
-                }
-                var result = eval(ruleDescriptor.rule.formula);
-                return result;
-            }), context);
+            var bases = ruleDescriptor.rule.bases;
+            for (let i = 0; i < bases.length; i++) {
+                var baseObj = yield _doGetRuleObjectByTerminologyTagWithThrow(bases[i]);
+
+                _G["_" + i] = baseObj.iValue;
+            }
+            var result = eval(ruleDescriptor.rule.formula);
+            return result;
 
         } catch (e) {
             throw e;
@@ -710,7 +716,43 @@ function* _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName) {
 
     };
 
-
 };
+
+function* _modifyRulesValueWithThrow(accessorTag, incubatorName, rulesChanged) {
+    var incubator = yield dbMgr.theOneItemInAccessorWithThrow(accessorTag, { name: incubatorName });
+    var ruleAccessorTag = incubator.strategy.ruleAccessorTag;
+    var termAccessorTag = incubator.strategy.terminologyAccessorTag;
+    var pdcAccessorTag = incubator.container.PDC.accessorTag;
+    var recordAccessorTag = incubator.container.record.accessorTag;
+    var inserted = [];
+    var context = {};
+    yield dbMgr.holdLockAndOperWithAssertWithThrow(ruleAccessorTag, async(function*() { //先为了安全加锁，防止查询时，已经被改变了
+        for (let i = 0; i < rulesChanged.length; i++) {
+            var ruleDesc = rulesChanged[i];
+            var inAccessor = yield dbMgr.theOneItemInAccessorWithThrow(ruleAccessorTag, { name: ruleDesc.tag });
+            if (!inAccessor) {
+                var selfRuleDesc = {};
+                selfRuleDesc.name = ruleDesc.tag;
+                selfRuleDesc.rule = {};
+                selfRuleDesc.rule.style = ruleDesc.style
+                selfRuleDesc.rule.iValue = ruleDesc.value;
+                inserted.push(selfRuleDesc);
+            } else { //已经在自己accessor中了，update
+                var updated = {};
+                updated.rule = {
+                    style: ruleDesc.style,
+                    iValue: ruleDesc.value
+                };
+                yield dbMgr.updateItemsInAccessorWithThrow(ruleAccessorTag, { name: ruleDesc.tag }, updated)
+            }
+        }
+        yield dbMgr.addItemsToAccessorWithThrow(ruleAccessorTag, inserted);
+
+    }), context);
+    if (rulesChanged.length > 0) {
+        yield dbMgr.updateAccessorWithThrow(ruleAccessorTag, { lastModified: Date.now() })
+    }
+};
+module.exports.modifyRulesValueWithThrow = async(_modifyRulesValueWithThrow);
 module.exports.getRuleObjectByQNameWithThrow = async(_getRuleObjectByQNameWithThrow);
 module.exports.getRuleObjectByTerminologyTagWithThrow = async(_getRuleObjectByTerminologyTagWithThrow);

@@ -64,5 +64,15 @@ module.exports.getProjectRule = async(function*(req, res, next) {
 
     res.json(ruleObj);
 });
+module.exports.modifyProjectRuleValue = async(function*(req, res, next) {
+    var projectTag = req.body.projectTag;
+    var rulesChanged = req.body.rules;
+    var projectInfo = yield usrMgr.getUserSelfProjectInfoWithThrow(req.user.userToken, projectTag);
+
+    var incubator = projectInfo.assets.incubator;
+    var ruleObj = yield incubatorMgr.modifyRulesValueWithThrow(incubator.accessorTag, incubator.name, rulesChanged);
+    res.end();
+
+});
 
 //当东西可以不被独有时，可以用[]populate比较合适；独占时，使用ownerTag比较好，虽然比较占空间。；name用populate，记录还是用tracer.owner
