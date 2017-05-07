@@ -5,19 +5,19 @@
 (function() {
     'use strict';
 
-    angular.module('BlurAdmin.pages.dashboard', [])
+    angular.module('BlurAdmin.pages.projectDesc', [])
         .config(routeConfig);
 
     /** @ngInject */
     function routeConfig($stateProvider) {
         $stateProvider
-            .state('dashboard', {
-                url: '/dashboard',
-                templateUrl: 'app/pages/dashboard/dashboard.html',
-                title: '控制台',
+            .state('projectDesc', {
+                url: '/projectDesc',
+                templateUrl: 'app/pages/projectDesc/projectDesc.html',
+                title: '项目描述',
                 sidebarMeta: {
                     icon: 'ion-android-home',
-                    order: 0,
+                    order: 10,
                     show: true
                 },
 

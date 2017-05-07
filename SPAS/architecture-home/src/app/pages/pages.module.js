@@ -13,8 +13,6 @@
             'ui.bootstrap',
             'BlurAdmin.pages.dashboard',
             "BlurAdmin.pages.project",
-            "BlurAdmin.pages.blockPlanner",
-            "BlurAdmin.pages.cost",
 
 
             // 'BlurAdmin.pages.charts',

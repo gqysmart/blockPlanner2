@@ -13,9 +13,11 @@
             'ngSanitize',
             'ui.bootstrap',
             'BlurAdmin.pages.dashboard',
-            "BlurAdmin.pages.project",
-            "BlurAdmin.pages.blockPlanner",
-            "BlurAdmin.pages.cost",
+            "BlurAdmin.pages.projectDesc",
+            "BlurAdmin.pages.department",
+            "BlurAdmin.pages.schedule",
+            "BlurAdmin.pages.soil",
+            "BlurAdmin.pages.plan",
 
             // 'BlurAdmin.pages.charts',
         ])

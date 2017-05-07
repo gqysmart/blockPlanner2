@@ -5,7 +5,7 @@
 (function() {
     'use strict';
 
-    angular.module('BlurAdmin.pages.project')
+    angular.module('BlurAdmin.pages.dashboard')
         .service('projectDetails', projectDetails);
     var urlRule = "/project/rule";
     var urlModifyRule = "/project/modifyRulesValue"

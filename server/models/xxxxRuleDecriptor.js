@@ -20,16 +20,25 @@ const Schema = mongoose.Schema;
  */
 
 const xxxDescriptorSchema = new Schema({ //统一为ruleformulariptor。包括计算规则，断言规则，等等。
-    name: { type: String, required: true }, //CalcRuleAccessor 可能会根据类别通过ownertag分类存储calc规则。
-    rule: {
-        input: [String], //输入接口
-        formula: String, //处理过程
-        output: [String] //输入接口
+    name: { type: String, required: true },
+    ruleClass: {
+        type: String,
+        enum: ["D0", //字符型描述规则,
+            "D1", //地区地址描述性规则,
+            "D2", //时刻时间描述性规则，
+            "D3", //普通数值规则
+            "D4", //组合关系描述规则
+            "D5", //普通Plain object
+            //
+            "C1", //与bases没有层级关系，不存储iValue值，值是通过formula计算得来的。
+            "C2", //与bases有层级关系，不存储iValue值，值是通过formula计算得来的。
+            "C4", //是迭代变量，需提供iValue值作为默认值，没有默认为0
+            "C5", //输入为接口对象{接口名词1:计算规则1，接口名词2：计算规则2}
+        ]
     },
-    tracer: {
-        //       updatedTime: { type: Date, default: Date.now }, //创建和修改后的时间。没有意义。
-        ownerTag: { type: String } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag
-    }
+    ruleBases: [String],
+    ruleFormula: String,
+    ruleValue: {}
 });
 
 
