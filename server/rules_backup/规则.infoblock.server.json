@@ -2,8 +2,8 @@
     "name": "江苏嘉城/规则/规划",
     "bases": "1:江苏嘉城/规则/规划/南京|2:江苏嘉城/规则/规划/上海",
     "deps": "1:江苏嘉城/项目/项目描述",
-    "interfaceNamePrefix": "江苏嘉城/规则/规划",
-    "interface": {
+    "namePrefix": "江苏嘉城/规则/规划",
+    "hook": {
         "机动车位": { "getter": "BASECONDITION(DEP[1]<江苏嘉城/项目/项目地址>:EQ:规则适用地区，需机动车位)" }
     },
     "infoBlock": {
@@ -13,8 +13,8 @@
     "name": "江苏嘉城/规划",
     "bases": "1:江苏嘉城/规则/规划/南京",
     "deps": "1:江苏嘉城/项目/项目描述|2:江苏嘉城/规则",
-    "interfaceNamePrefix": "江苏嘉城/规则",
-    "interface": {
+    "hookNamePrefix": "江苏嘉城/规则",
+    "hook": {
         "需机动车位": { "getter": "OBJECT{江苏嘉城/规则/规划/需机动车位总数:SUM(THIS{})，江苏嘉城/规则/规划/露天停车位:MULTI()，}" }
     },
     "infoBlock": {

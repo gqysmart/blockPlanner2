@@ -1,31 +1,36 @@
 [{
         "name": "江苏嘉城/项目/土地出让限定条件",
-        "bases": "1:江苏嘉城/项目/土地出让限定条件/地块1",
-        "interface": {
-            "江苏嘉城/土地出让限定条件/土地出让总面积": { "getter": "SUMINTERFACE(江苏嘉城/土地出让条件/土地出让面积)" },
-            "江苏嘉城/土地出让限定条件": { "getter": "SUMINTERFACE(江苏嘉城/项目/土地出让限定条件/土地出让面积)" }
+        "bases": "1:江苏嘉城/项目/土地出让限定条件/地块",
+        "namePrefix": "江苏嘉城/土地出让限定条件/",
+        "hooks": {
+            "土地出让总面积": { "getter": "SIGMA(BASE<江苏嘉城/土地出让条件/土地出让面积>)" }
         },
         "infoBlock": null
     },
     {
-        "name": "江苏嘉城/项目/土地出让限定条件/地块1",
+        "name": "江苏嘉城/项目/土地出让限定条件/地块",
         "bases": "",
-        "namePrefix": "江苏嘉城/土地出让条件",
-        "interface": {
+        "namePrefix": "江苏嘉城/土地出让条件/",
+        "hooks": {
             "土地出让面积": {
-                "getter": "PROPGET(土地出让面积)",
-                "setter": "PROPSET(土地出让面积)"
+                "getter": "PROPGET(THIS<土地出让面积>)",
+                "setter": "PROPSET(THIS<土地出让面积>,NUMBER|NOTNULL|MAX=6553567)"
             },
             "土地编号": {
-                "getter": "PROPGET(土地编号)",
-                "setter": "PROPSET(土地编号)"
+                "getter": "PROPGET(THIS<土地编号>)",
+                "setter": "PROPSET(THIS<土地编号>,STRING|REGX=/^AD/|"
+            },
+            "容积率": {
+                "getter": "PROPGET(THIS<容积率>)",
+                "setter": "PROPSET(THIS<土地编号>,OBJECT|FIELD(interval,ARRAY|LENGTH=2|SORT=DESC)|FIELD(type,ENUM[00,01,10,11]"
             }
+
         },
         "infoBlock": {
             "土地出让面积": 0,
-            "土地编号": "",
+            "土地编号": "AD-",
             "土地拍卖时间": "2017/02/11",
-            "容积率": [2, 0]
+            "容积率": { "interval": [0, 2], "type": "01" }
         }
     }
 

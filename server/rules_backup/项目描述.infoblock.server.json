@@ -2,7 +2,7 @@
         "name": "江苏嘉城/项目/项目描述",
         "bases": "",
         "namePrefix": "江苏嘉城/项目",
-        "interface": {
+        "hook": {
             "项目名称": {
                 "getter": "PROPGET(项目名称)",
                 "setter": "PROPSET(项目名称,STRING|NOTNULL|LENGTHMAX=32)"

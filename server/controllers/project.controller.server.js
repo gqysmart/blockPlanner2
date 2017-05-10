@@ -78,8 +78,16 @@ module.exports.modifyProjectRuleValue = async(function*(req, res, next) {
 });
 
 function* test(req, res, next) {
-    var result = yield infoMgr.getInfoByInterfaceNameWithThrow("江苏嘉城/项目/土地出让限定条件", "江苏嘉城/项目/土地出让限定条件/土地出让总面积");
-    res.json({ result: result });
+    var result1 = yield infoMgr.getInfoByPropNameWithThrow("江苏嘉城/项目/土地出让限定条件/地块", "江苏嘉城/土地出让条件/容积率");
+    //   var layoutBlock = yield infoMgr.getInfoBlockWithThrow("江苏嘉城/项目/控制台/缺省布局");
+    var result2 = [];
+    // for (let key in layoutBlock) {
+    //     var tab = layoutBlock[key];
+    //     var tabInfoBlock = yield infoMgr.getInfoBlockWithThrow(tab.info);
+    //     result2.push[tabInfoBlock];
+    // }
+
+    res.json({ result1: result1, result2: result2 });
 }
 module.exports.test = async(test);
 

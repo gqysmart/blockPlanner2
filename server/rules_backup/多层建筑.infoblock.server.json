@@ -2,8 +2,8 @@
         "name": "江苏嘉城/设计/规划",
         "bases": "1:江苏嘉城/设计/物业类型1",
         "deps": "1:江苏嘉城/项目/项目描述|2:江苏嘉城/规则",
-        "interfaceNamePrefix": "江苏嘉城/设计",
-        "interface": {
+        "hookNamePrefix": "江苏嘉城/设计",
+        "hook": {
             "多层住宅计容面积": { "getter": "SUM(江苏嘉城/设计/多层住宅建筑面积)" },
             "高层住宅计容面积": { "getter": "SUM(江苏嘉城/项目/土地出让限定条件/土地出让面积)" },
             "机动车最少停车位": { "getter": "DEP[2]<江苏嘉城/规则/机动车位>()" }
@@ -16,7 +16,7 @@
         "name": "江苏嘉城/设计/物业类型1",
         "bases": "",
         "inerefaceNamePrefix": "江苏嘉城/设计",
-        "interface": {
+        "hook": {
             "计容面积": {
                 "getter": "PROPGET(建筑面积)",
                 "setter": "PROPSET(计容面积)"

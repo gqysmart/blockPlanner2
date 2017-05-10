@@ -25,7 +25,6 @@ const UserSchema = new Schema({
     hashed_password: { type: String, default: "" },
     salt: { type: String, default: "" },
     userToken: { type: String, },
-    userToken: { type: String },
     tracer: { ownerTag: String }, //accessorTag
     profile: { accessorTag: String, name: String }
 });
