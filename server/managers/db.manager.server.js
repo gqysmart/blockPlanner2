@@ -45,6 +45,12 @@ const terminologyAccessorTagCfgCriteria = { name: "terminologyAccessorTag", cate
 const orgnizerAccessorTagCfgCriteria = { name: "orgnizerAccessorTag", category: "system", version: version };
 const mainUserAccessorTagCfgCriteria = { name: "userAccessorTag", category: "system", version: version };
 const systemLogAccessorTagCfgCriteria = { name: "systemLogAccessorTag", category: "system", version: version };
+const mainInfoblockAccessorTagCfgCriteria = { name: "infoBlock", category: "system", version: version };
+module.exports.mainInfoblockAccessorTagCfgCriteria = (function() {
+    var criteria = {};
+    _.defaults(criteria, mainInfoblockAccessorTagCfgCriteria);
+    return criteria;
+})();
 module.exports.mainUserAccessorTagCfgCriteria = (function() {
     var criteria = {};
     _.defaults(criteria, mainUserAccessorTagCfgCriteria);

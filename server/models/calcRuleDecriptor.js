@@ -21,27 +21,27 @@ const Schema = mongoose.Schema;
 
 const ruleDescriptorSchema = new Schema({ //统一为ruleformulariptor。包括计算规则，断言规则，等等。
     name: { type: String, required: true }, //CalcRuleAccessor 可能会根据类别通过ownertag分类存储calc规则。
-    rule: {
-        bases: [String], //baseRules name
-        formula: String, //改成formula
-        style: {
-            type: String,
-            enum: ["D0", //字符型描述规则,
-                "D1", //地区地址描述性规则,
-                "D2", //时刻时间描述性规则，
-                "D3", //普通数值规则
-                "D4", //组合关系描述规则
-                "D5", //普通Plain object
-                //
-                "C1", //与bases没有层级关系，不存储iValue值，值是通过formula计算得来的。
-                "C2", //与bases有层级关系，不存储iValue值，值是通过formula计算得来的。
-                "C4", //是迭代变量，需提供iValue值作为默认值，没有默认为0
-                "C5", //输入为接口对象{接口名词1:计算规则1，接口名词2：计算规则2}
-            ], //对于断言规则，参数输入同样是依赖bases，输出是bool型//webservice，时间规则等返回的可能是对象类型，通过接口约定//  associated: String, //对于predicated规则，关联到约束的对象。一般规则为NULL。
-        },
-        iValue: {}, //迭代时，默认的初始值，如果没有指定iValue，计算时默认为0.
-
+    ruleClass: {
+        type: String,
+        enum: ["D0", //字符型描述规则,
+            "D1", //地区地址描述性规则,
+            "D2", //时刻时间描述性规则，
+            "D3", //普通数值规则
+            "D4", //组合关系描述规则
+            "D5", //普通Plain object
+            "D6", //信息块
+            "D7", //信息块组
+            //
+            "C1", //与bases没有层级关系，不存储iValue值，值是通过formula计算得来的。
+            "C2", //与bases有层级关系，不存储iValue值，值是通过formula计算得来的。
+            "C3", //是迭代变量，需提供iValue值作为默认值，没有默认为0
+            "C4", //组合计算，
+            "C5", //输入为接口对象{接口名词1:计算规则1，接口名词2：计算规则2}
+        ]
     },
+    ruleBases: [String],
+    ruleFormula: String,
+    ruleValue: {},
     tracer: {
         //       updatedTime: { type: Date, default: Date.now }, //创建和修改后的时间。没有意义。
         ownerTag: { type: String } ///拥有者tagID == thisTag:eg:select * from # where owerTag:thisTag

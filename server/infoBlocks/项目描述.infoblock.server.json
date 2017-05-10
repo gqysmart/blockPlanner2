@@ -1,0 +1,22 @@
+[{
+        "name": "江苏嘉城/项目/项目描述",
+        "bases": "",
+        "namePrefix": "江苏嘉城/项目",
+        "interface": {
+            "项目名称": {
+                "getter": "PROPGET(项目名称)",
+                "setter": "PROPSET(项目名称,STRING|NOTNULL|LENGTHMAX=32)"
+            },
+            "项目创建时间": {
+                "getter": "PROPGET(项目创建时间)",
+                "setter": "PROPSET(项目创建时间)"
+            }
+        },
+        "infoBlock": {
+            "项目名称": "",
+            "项目创建时间": "2017/02/11",
+            "项目创建者": "geqiyun"
+        }
+    }
+
+]

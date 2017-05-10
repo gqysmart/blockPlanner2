@@ -54,7 +54,7 @@ module.exports = function(app, passport) {
     ///resources
     app.param("app", function(req, res, next, appname) {
 
-        var appNames = ["plan", "home", "project"];
+        var appNames = ["plan", "home", "project", "test"];
         if (-1 === appNames.indexOf(appname)) {
             res.end("hello"); //404
         } else {
@@ -90,6 +90,7 @@ module.exports = function(app, passport) {
     });
     app.post("/project/rule", auth.requiresLogin, project.getProjectRule);
     app.post("/project/modifyRulesValue", auth.requiresLogin, project.modifyProjectRuleValue);
+    app.get("/test", project.test);
 
 
 

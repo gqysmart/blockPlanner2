@@ -162,7 +162,7 @@ function* constructHierarchy(rootCalcRuleName, pdcAccessorTag, ruleAccessorTag, 
         value: value,
         bases: []
     };
-    var bases = calcRuleDescriptor.rule.bases;
+    var bases = calcRuleDescriptor.ruleBases;
     for (let i = 0; i < bases.length; i++) {
         let childObject = yield constructHierarchy(bases[i], pdcAccessorTag, ruleAccessorTag, terminologyAccessorTag);
         node.bases.push(childObject);
@@ -659,23 +659,23 @@ function* _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName) {
         result.name = yield cryptMgr.cryptWith(ruleName);
         var QName = yield termMgr.terminologyTag2QualifiedName(ruleName, termAccessorTag);
         result.pretty = QName.split("/").pop();
-        result.style = ruleDescriptor.rule.style;
-        switch (ruleDescriptor.rule.style) {
+        result.style = ruleDescriptor.ruleClass;
+        switch (ruleDescriptor.ruleClass) {
             case "D0":
             case "D1":
             case "D3":
-                result.iValue = ruleDescriptor.rule.iValue;
+                result.iValue = ruleDescriptor.ruleValue;
                 return result;
                 break;
             case "D2": //时间
-                var time = new Date(ruleDescriptor.rule.iValue);
+                var time = new Date(ruleDescriptor.ruleValue);
                 result.iValue = time;
                 return result;
                 break;
             case "D4": //组，分别计算每个bases，作为其ivalue;一般的计算也不需要保存到record中，耗时的迭代运算才需要用到recorder。
                 result.iValue = [];
-                for (let i = 0; i < ruleDescriptor.rule.bases.length; i++) {
-                    var base = ruleDescriptor.rule.bases[i];
+                for (let i = 0; i < ruleDescriptor.ruleBases.length; i++) {
+                    var base = ruleDescriptor.ruleBases[i];
                     var baseValue = yield _doGetRuleObjectByTerminologyTagWithThrow(base);
                     result.iValue.push(baseValue);
                 }
@@ -685,12 +685,35 @@ function* _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName) {
             case "C1": //依赖作为formula的一部分
                 result.iValue = yield _getCalcRuleValueFromPDCWithThrow(ruleName);
                 return result;
+            case "C2": //需返回子项的数值
+                result.bases = [];
+                for (let i = 0; i < ruleDescriptor.ruleBases.length; i++) {
+                    var base = ruleDescriptor.ruleBases[i];
+                    var baseValue = yield _doGetRuleObjectByTerminologyTagWithThrow(base);
+                    result.bases.push(baseValue);
+                }
+                result.iValue = _getRuleValueByFormula(result.bases, ruleDescriptor.ruleFormula);
+                return result;
                 break;
             default:
-                var err = { no: exceptionMgr.parameterException, context: { style: ruleDescriptor.rule.style } };
+                var err = { no: exceptionMgr.parameterException, context: { style: ruleDescriptor.ruleClass } };
                 throw err;
         }
 
+    };
+
+    function* _getRuleValueByFormula(bases, formula) {
+        var _G = {};
+        try {
+            for (let i = 0; i < bases.length; i++) {
+                var baseObj = bases[i];
+                _G["_" + i] = baseObj.iValue;
+            }
+            var result = eval(formula);
+            return result;
+        } catch (e) {
+            throw e;
+        }
     };
 
     function* _getCalcRuleValueFromPDCWithThrow(ruleName) {
@@ -701,13 +724,13 @@ function* _getRuleObjectByQNameWithThrow(accessorTag, incubatorName, qName) {
         var _G = {};
         try {
 
-            var bases = ruleDescriptor.rule.bases;
+            var bases = ruleDescriptor.ruleBases;
             for (let i = 0; i < bases.length; i++) {
                 var baseObj = yield _doGetRuleObjectByTerminologyTagWithThrow(bases[i]);
 
                 _G["_" + i] = baseObj.iValue;
             }
-            var result = eval(ruleDescriptor.rule.formula);
+            var result = eval(ruleDescriptor.ruleFormula);
             return result;
 
         } catch (e) {
@@ -733,15 +756,14 @@ function* _modifyRulesValueWithThrow(accessorTag, incubatorName, rulesChanged) {
             if (!inAccessor) {
                 var selfRuleDesc = {};
                 selfRuleDesc.name = ruleDesc.tag;
-                selfRuleDesc.rule = {};
-                selfRuleDesc.rule.style = ruleDesc.style
-                selfRuleDesc.rule.iValue = ruleDesc.value;
+                //selfRuleDesc.rule = {};
+                selfRuleDesc.ruleClass = ruleDesc.style
+                selfRuleDesc.ruleValue = ruleDesc.value;
                 inserted.push(selfRuleDesc);
             } else { //已经在自己accessor中了，update
-                var updated = {};
-                updated.rule = {
-                    style: ruleDesc.style,
-                    iValue: ruleDesc.value
+                var updated = {
+                    ruleClass: ruleDesc.style,
+                    ruleValue: ruleDesc.value
                 };
                 yield dbMgr.updateItemsInAccessorWithThrow(ruleAccessorTag, { name: ruleDesc.tag }, updated)
             }

@@ -237,12 +237,12 @@ function* _addRuleDescriptorByRuleDefine(ruleAccessorTag, terminologyTag, ruleDe
 
         var item = {
             name: name,
-            rule: {
-                bases: bases,
-                formula: ruleDefine.formula,
-                iValue: ruleDefine.iValue,
-                style: style
-            },
+
+            ruleBases: bases,
+            ruleFormula: ruleDefine.formula,
+            ruleValue: ruleDefine.iValue,
+            ruleClass: style
+
         };
         ruleDescriptors.push(item);
     }
@@ -352,11 +352,15 @@ function* _modifyCalcRule(ruleAccessorTag, ruleInfo) { //complicated.  //update�
 
 const styleNameMap = {
 
-    "普通数值": "D0",
+    "普通字符串": "D0",
     "普通地址": "D1",
     "普通时间": "D2",
+    "普通数值": "D3",
     "组": "D4",
-    "普通公式": "C1"
+    "信息块": "D6",
+    "信息块组": "D7",
+    "普通公式": "C1",
+    "组计算公式": "C2"
 };
 // "D0", //字符型描述规则,
 // "D1", //地区地址描述性规则,

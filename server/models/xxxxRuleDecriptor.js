@@ -19,41 +19,21 @@ const Schema = mongoose.Schema;
  * user schema
  */
 
-const xxxDescriptorSchema = new Schema({ //统一为ruleformulariptor。包括计算规则，断言规则，等等。
-    name: { type: String, required: true },
-    ruleClass: {
-        type: String,
-        enum: ["D0", //字符型描述规则,
-            "D1", //地区地址描述性规则,
-            "D2", //时刻时间描述性规则，
-            "D3", //普通数值规则
-            "D4", //组合关系描述规则
-            "D5", //普通Plain object
-            //
-            "C1", //与bases没有层级关系，不存储iValue值，值是通过formula计算得来的。
-            "C2", //与bases有层级关系，不存储iValue值，值是通过formula计算得来的。
-            "C4", //是迭代变量，需提供iValue值作为默认值，没有默认为0
-            "C5", //输入为接口对象{接口名词1:计算规则1，接口名词2：计算规则2}
-        ]
-    },
-    ruleBases: [String],
-    ruleFormula: String,
-    ruleValue: {}
+const infoBlockSchema = new Schema({ //
+    name: { type: String, required: true }, //地块1，任意的
+    bases: [String], //依赖的信息块
+    interface: {},
+    infoBlock: {},
+    tracer: { ownerTag: String },
 });
 
 
 //create query index
 //查询和get可以分为两阶段，第一阶段为索引cover查询。第二阶段为get没有索引的较大的数据。
-const coreProject = { "tracer.ownerTag": 1, name: 1, "rule.bases": 1, "rule.formula": 1, "rule.iValue": 1 };
-const coveredIndex = { "tracer.ownerTag": 1, name: 1, "rule.bases": 1, "rule.formula": 1, "rule.iValue": 1 };
-
-xxxDescriptorSchema.index({ "tracer.ownerTag": 1, name: 1 }, { unique: true });
-xxxDescriptorSchema.index(coveredIndex); //cover query
 
 
 
-var xxxDescriptor = mongoose.model('xxxDescriptor', xxxDescriptorSchema);
-xxxDescriptor.coreProject = coreProject;
+var infoBlock = mongoose.model('InfoBlock', infoBlockSchema);
 
 /**
  *

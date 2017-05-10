@@ -21,6 +21,7 @@ const dbMgr = require("./db.manager.server");
 const termMgr = require("./terminology.manager.server");
 const ruleMgr = require("./rule.manager.server");
 const logManager = require("./log.manager.server");
+const infoblockMgr = require("./infoBlock.manager.server");
 const recursive = require("recursive-readdir");
 
 //
@@ -37,6 +38,7 @@ const rootCalcRuleIDCfgCriteria = dbMgr.rootRuleAccessorTagCfgCriteria;
 const terminologyAccessorTagCriteria = dbMgr.terminologyAccessorTagCfgCriteria;
 const systemLogAccessorTagCfgCriteria = dbMgr.sysinitedCfgCriteria;
 const rootAccessorTagCfgCriteria = dbMgr.rootAccessorTagCfgCriteria;
+const mainInfoblockAccessorTagCfgCriteria = dbMgr.mainInfoblockAccessorTagCfgCriteria;
 
 //
 module.exports.init = async(function*(cb) {
@@ -52,7 +54,8 @@ module.exports.init = async(function*(cb) {
             yield co(initTerminologyDBFromLocale());
             // yield co(initTerminologyDBFromRemote());
             //      yield co(initCalcRuleDB());
-            yield co(initRuleDBFromLocale());
+            //    yield co(initRuleDBFromLocale());
+            yield initInfoBlockFromLocale();
             yield dbMgr.addSysConfigWithThrow(initedCfgCriteria, true);
 
         } catch (e) {
@@ -211,6 +214,41 @@ function* initRuleDBFromLocale() {
     }
 };
 
+function* initInfoBlockFromLocale() {
+
+    var mainInfoblockAccessorTag = yield dbMgr.getSysConfigValue(mainInfoblockAccessorTagCfgCriteria);
+    if (!mainInfoblockAccessorTag) { //copy form systmemb db
+        var mainInfoblockAccessorTag = yield dbMgr.addAccessorWithThrow("InfoBlock");
+        //    var terminologyTag = yield dbMgr.getSysConfigValue(terminologyAccessorTagCriteria);
+        yield dbMgr.addSysConfigWithThrow(mainInfoblockAccessorTagCfgCriteria, mainInfoblockAccessorTag);
+
+        var rulesPath = path.join(__dirname, "..", "infoBlocks");
+        recursive(rulesPath, [".*"], function(err, files) {
+            for (let i = 0; i < files.length; i++) {
+                var file = files[i];
+                co(function*() {
+                    var jsonRules = require(file);
+                    yield infoblockMgr.addInfoBlockByBlockDefine(mainInfoblockAccessorTag, jsonRules);
+
+                });
+            }
+
+        });
+
+    }
+    yield doWait(3);
+
+    function* doWait(sec) {
+        var aPromise = new Promise(function(resolve) {
+            setTimeout(function() {
+                resolve();
+            }, sec * 1000);
+
+
+        });
+        return aPromise;
+    }
+};
 
 function* initSysDefaultAccessor() {
     yield initOrgnizerAccessor();
