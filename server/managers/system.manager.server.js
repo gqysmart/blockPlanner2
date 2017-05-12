@@ -51,10 +51,11 @@ module.exports.init = async(function*(cb) {
             yield co(initProtoChain());
             yield co(initSysDefaultAccessor());
             //   yield co(initSystemLog()); //1
-            yield co(initTerminologyDBFromLocale());
+            //   yield co(initTerminologyDBFromLocale());
             // yield co(initTerminologyDBFromRemote());
             //      yield co(initCalcRuleDB());
             //    yield co(initRuleDBFromLocale());
+            yield initInfoTerminologyDBFromLocale();
             yield initInfoBlockFromLocale();
             yield dbMgr.addSysConfigWithThrow(initedCfgCriteria, true);
 
@@ -238,6 +239,39 @@ function* initInfoBlockFromLocale() {
     }
     yield doWait(3);
 
+    function* doWait(sec) {
+        var aPromise = new Promise(function(resolve) {
+            setTimeout(function() {
+                resolve();
+            }, sec * 1000);
+
+
+        });
+        return aPromise;
+    }
+};
+
+function* initInfoTerminologyDBFromLocale() {
+
+    var terminologyAccessorTag = yield dbMgr.getSysConfigValue(terminologyAccessorTagCriteria);
+    if (!terminologyAccessorTag) { //copy form systmemb db
+        var sysTerminologyAccessorTag = yield dbMgr.addAccessorWithThrow("Terminology");
+        yield dbMgr.addSysConfigWithThrow(terminologyAccessorTagCriteria, sysTerminologyAccessorTag);
+
+        var rulesPath = path.join(__dirname, "..", "infoBlocks");
+        recursive(rulesPath, [".*"], function(err, files) {
+            for (let i = 0; i < files.length; i++) {
+                var file = files[i];
+                co(function*() {
+                    var jsonRules = require(file);
+                    yield termMgr.addTerminologiesByBlockDefine(sysTerminologyAccessorTag, jsonRules);
+
+                });
+            }
+        });
+
+    }
+    yield doWait(3); //笨办法。
     function* doWait(sec) {
         var aPromise = new Promise(function(resolve) {
             setTimeout(function() {

@@ -9,7 +9,7 @@ const sysConf = require("../config/sys");
 const exceptionMgr = require("./exception.manager.server");
 const dbMgr = require("./db.manager.server");
 
-function* addUser(userInfo, userAccessorTag) {
+function* addUserWithThrow(userAccessorTag, userInfo) {
     if (!userAccessorTag) {
         userAccessorTag = yield dbMgr.getSysConfigValue(dbMgr.mainUserAccessorTagCfgCriteria);
     };
@@ -18,30 +18,14 @@ function* addUser(userInfo, userAccessorTag) {
     if (!_userInfo.userToken) {
         _userInfo.userToken = (new ObjectID()).toString();
     }
-    if (!_userInfo.profile || !_userInfo.profile.accessorTag) {
-        _userInfo.profile = { accessorTag: yield dbMgr.addAccessorWithThrow("Profile") };
-        _userInfo.profile.name = (new ObjectID()).toString();
+    if (!_userInfo.infoAccessorTag) {
+        var sysAccessorTag = yield dbMgr.getSysConfigValue(dbMgr.mainInfoblockAccessorTagCfgCriteria);
+        _userInfo.infoAccessorTag = yield dbMgr.addAccessorWithThrow("InfoBlock", sysAccessorTag);
     }
-
-
-    var selfProjects = { accessorTag: yield dbMgr.addAccessorWithThrow("Project") };
-    var sysInfoBlockAccessorTag = yield dbMgr.getSysConfigValue(dbMgr.mainInfoblockAccessorTagCfgCriteria);
-    var profileInfoAccessorTag = yield dbMgr.addAccessorWithThrow("InfoBlock", sysInfoBlockAccessorTag);
-    yield dbMgr.addOneItemToAccessorWithThrow(_userInfo.profile.accessorTag, { name: _userInfo.profile.name, userToken: _userInfo.userToken, selfProjects: { accessorTag: selfProjects.accessorTag } });
     return yield dbMgr.addOneItemToAccessorWithThrow(userAccessorTag, _userInfo);
 };
-module.exports.addUser = async(addUser);
+module.exports.addUserWithThrow = async(addUserWithThrow);
 
-function* getSelfProjectAccessorTagWithThrow(userToken) {
-    var accessorTag = yield dbMgr.getSysConfigValue(dbMgr.mainUserAccessorTagCfgCriteria);
-    var user = yield dbMgr.theOneItemInAccessorWithThrow(accessorTag, { userToken });
-    if (!user) {
-        var err = { no: exceptionMgr.parameterException, context: { userToken } };
-        throw err;
-    }
-    var profile = yield dbMgr.theOneItemInAccessorWithThrow(user.profile.accessorTag, { name: user.profile.name });
-    return profile.selfProjects.accessorTag;
-};
 module.exports.getSelfProjectAccessorTagWithThrow = async(getSelfProjectAccessorTagWithThrow);
 
 function* _getAllUserSelfProjectInfoWithThrow(userToken) {

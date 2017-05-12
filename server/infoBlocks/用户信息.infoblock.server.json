@@ -1,0 +1,22 @@
+[{
+        "name": "江苏嘉城.用户.个人项目",
+        "bases": "<项目列表>",
+        "defaults": "项目列表",
+        "hooks": {
+            "项目列表": { "GET": "PROPGET(项目列表|FILTERS)", "POST": "FORBIDDED()", "ADD": "ARRAYPUSH(项目列表)" }
+        },
+        "infoBlock": {}
+    },
+    {
+        "name": "江苏嘉城.用户.缺省项目",
+        "bases": "",
+        "hooks": {
+            "项目名称": { "POST": "PROPSET(项目名称,String|LENGTH=LET(36)|REGX=/[a-zA-Z]*)" }
+        },
+        "infoBlock": {
+            "项目名称": "",
+            "其他项目信息": ""
+        }
+    }
+
+]

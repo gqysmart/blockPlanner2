@@ -26,7 +26,8 @@ const UserSchema = new Schema({
     salt: { type: String, default: "" },
     userToken: { type: String, },
     tracer: { ownerTag: String }, //accessorTag
-    profile: { accessorTag: String, name: String }
+    profile: { accessorTag: String, name: String },
+    infoAccessorTag: String
 });
 
 const validatePresenceOf = value => value && value.length;

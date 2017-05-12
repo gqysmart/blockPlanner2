@@ -1,36 +1,44 @@
 [{
-        "name": "江苏嘉城/项目/土地出让限定条件",
-        "bases": "1:江苏嘉城/项目/土地出让限定条件/地块",
-        "namePrefix": "江苏嘉城/土地出让限定条件/",
+        "name": "江苏嘉城.项目.土地出让限定条件",
+        "bases": "<地块列表>1:江苏嘉城.项目.土地出让限定条件.地块",
+        "default": "土地出让总面积",
         "hooks": {
-            "土地出让总面积": { "getter": "SIGMA(BASE<江苏嘉城/土地出让条件/土地出让面积>)" }
+            "土地出让总面积": { "GET": "SIGMA(MAP(PARAMSARR(['PROPGET(P(地块列表))','P(INFOGET)','PARAMSARR(['P($value)','P(土地出让面积)'])'])))" },
+            "地块列表": { "POST": "FORBIDDED()", "ADD": "ARRAYPUSH(地块列表)", "ATTRS": { "DISPLAY": "NOLIST", "FILTERS": "NUMBER|NOTNULL|MAX=6553567|MIN=1" } }
         },
-        "infoBlock": null
+        "infoBlock": {
+            "地块列表": []
+        },
+
+        "notation": "怎么防止INFOREQ 相互循环调用呢？通过context解决，限制最大循环链的长度。"
     },
     {
-        "name": "江苏嘉城/项目/土地出让限定条件/地块",
+        "name": "江苏嘉城.项目.土地出让限定条件.地块",
         "bases": "",
-        "namePrefix": "江苏嘉城/土地出让条件/",
         "hooks": {
             "土地出让面积": {
-                "getter": "PROPGET(THIS<土地出让面积>)",
-                "setter": "PROPSET(THIS<土地出让面积>,NUMBER|NOTNULL|MAX=6553567)"
+                "ATTRS": { "FILTERS": "NUMBER" }
             },
             "土地编号": {
-                "getter": "PROPGET(THIS<土地编号>)",
-                "setter": "PROPSET(THIS<土地编号>,STRING|REGX=/^AD/|"
+
+                "ATTRS": { "FILTERS": "STRING|REGX=/^AD/" }
             },
             "容积率": {
-                "getter": "PROPGET(THIS<容积率>)",
-                "setter": "PROPSET(THIS<土地编号>,OBJECT|FIELD(interval,ARRAY|LENGTH=2|SORT=DESC)|FIELD(type,ENUM[00,01,10,11]"
+                "GET": "STR2REGION(P(容积率))",
+                "POST": "REGION2STR(P(容积率))",
+                "ATTRS": { "FILTERS": "REGION|MIN=0|MAX=INF" }
+            },
+            "土地拍卖时间": {
+                "ATTRS": {
+                    "FILTERS": "TIME"
+                }
             }
-
         },
         "infoBlock": {
             "土地出让面积": 0,
             "土地编号": "AD-",
-            "土地拍卖时间": "2017/02/11",
-            "容积率": { "interval": [0, 2], "type": "01" }
+            "土地拍卖时间": "2017.02.11",
+            "容积率": "(0,2.0]"
         }
     }
 

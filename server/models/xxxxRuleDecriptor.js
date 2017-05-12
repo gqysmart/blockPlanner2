@@ -21,10 +21,12 @@ const Schema = mongoose.Schema;
 
 const infoBlockSchema = new Schema({ //
     name: { type: String, required: true }, //地块1，任意的
-    thisTag: { type: String, unique: true },
-    bases: [String], //同类型的info
-    deps: [String], //输入引用
-    namePrefix: String,
+    // thisTag: { type: String, unique: true },
+    default: String, //默认属性
+    //  slots: [{ name: String }], //用于特殊目的
+    //  bases: [String], //同类型的info
+    //  deps: [String], //输入引用
+    //   namePrefix: String,
     hooks: {},
     infoBlock: {},
     tracer: { ownerTag: String },

@@ -60,10 +60,10 @@ function* qualifiedName2TerminologyTagWithThrow(qName, terminologyAccessorTag, o
     var rootterm = null;
     switch (options.lan) {
         case "en":
-            rootterm = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(terminologyAccessorTag, { "pretty.en": qName }, { name: 1 });
+            rootterm = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(terminologyAccessorTag, { "pretty.en": qName }, { returnFields: ["name"] });
             break;
         case "cn":
-            rootterm = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(terminologyAccessorTag, { "pretty.cn": qName }, { name: 1 });
+            rootterm = yield dbMgr.theOneItemAlongProtoToAccessorWithThrow(terminologyAccessorTag, { "pretty.cn": qName }, { returnFields: ["name"] });
 
             break;
     }
@@ -131,4 +131,53 @@ function* addTerminologiesByRuleDefine(terminologyAccessorTag, ruleDefines) {
 
 
 };
+
+function* addTerminologiesByBlockDefine(terminologyAccessorTag, ruleDefines) {
+    if (!_.isArray(ruleDefines)) {
+        ruleDefines = [ruleDefines];
+    }
+    var terminologies = [];
+    for (let i = 0; i < ruleDefines.length; i++) {
+        var cnName = ruleDefines[i].name;
+        var desObject = yield parseDesc(ruleDefines[i].desc);
+        var item = {
+            name: yield generatorTerminologyNameByqualifiedNameUnunique(cnName),
+            pretty: { cn: cnName }
+        };
+        _.defaults(item, desObject);
+        terminologies.push(item);
+    }
+
+    function* parseDesc(desc) {
+        if (!desc) {
+            desc = "";
+        }
+        var result = {};
+
+        var descSegs = desc.split("|");
+        for (let i = 0; i < descSegs.length; i++) {
+            if (/^单位/.test(descSegs[i])) {
+
+                var unitDesc = descSegs[i];
+                var unit = unitDesc.split(":")[1];
+                result.unit = unit;
+                continue;
+            }
+        }
+        return result;
+
+    }
+
+    var context = {};
+    yield dbMgr.holdLockAndOperWithAssertWithThrow(terminologyAccessorTag, async(function*() {
+        if (terminologies.length > 0) {
+            yield dbMgr.addItemsToAccessorWithThrow(terminologyAccessorTag, terminologies);
+
+        }
+
+    }), context);
+
+
+};
 module.exports.addTerminologiesByRuleDefine = async(addTerminologiesByRuleDefine);
+module.exports.addTerminologiesByBlockDefine = async(addTerminologiesByBlockDefine);

@@ -24,6 +24,7 @@ const profileSchema = new Schema({
     userToken: { type: String, required: true },
     selfProjects: { accessorTag: String },
     orgnizations: [{ accessorTag: String, orgName: String }],
+    profileInfoAccessorTag: String,
     tracer: {
         ownerTag: { type: String }
     }
